@@ -13,6 +13,8 @@ from .views import (
     StaffLoginView,
     StaffActivateView,
     StaffDetailView,
+    ForgotPasswordView,
+    ResetPasswordView,
 )
 
 app_name = "accounts"
@@ -64,6 +66,17 @@ urlpatterns = [
         "token/refresh/",
         TokenRefreshView.as_view(),
         name="token-refresh",
+    ),
+    path(
+    "forgot-password/",
+    ForgotPasswordView.as_view(),
+    name="forgot-password",
+),
+
+    path(
+        "reset-password/",
+        ResetPasswordView.as_view(),
+        name="reset-password",
     ),
 
     # ============================================================

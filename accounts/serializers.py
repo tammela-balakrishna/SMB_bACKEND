@@ -209,3 +209,48 @@ class StaffManagementSerializer(serializers.ModelSerializer):
             )
 
         return value
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    account_type = serializers.ChoiceField(
+        choices=User.AccountType.choices,
+    )
+
+    otp = serializers.CharField(
+        min_length=6,
+        max_length=6,
+        trim_whitespace=True,
+    )
+
+    password = serializers.CharField(
+        min_length=8,
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    password_confirm = serializers.CharField(
+        min_length=8,
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+    def validate_otp(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                "OTP must contain only digits."
+            )
+
+        return value
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError(
+                {
+                    "password_confirm": "Passwords do not match."
+                }
+            )
+
+        return attrs

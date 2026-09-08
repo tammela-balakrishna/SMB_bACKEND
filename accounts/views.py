@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsSuperAdmin
 from .models import OTPVerification
+
 from .serializers import (
     SendOTPSerializer,
     VerifyOTPSerializer,
@@ -17,6 +18,8 @@ from .serializers import (
     CustomerLoginSerializer,
     StaffActivateSerializer,
     StaffManagementSerializer,
+    ForgotPasswordSerializer,
+    ResetPasswordSerializer,    
 )
 from .services.otp_service import (
     send_otp,
@@ -711,6 +714,139 @@ class StaffActivateView(APIView):
                     "role": user.role,
                     "is_verified": user.is_verified,
                 },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+class ForgotPasswordView(APIView):
+    """
+    Send a password-reset OTP to a customer or staff account.
+    """
+
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        email = serializer.validated_data["email"]
+        account_type = serializer.validated_data["account_type"]
+
+        user_exists = User.objects.filter(
+            email=email,
+            account_type=account_type,
+            is_active=True,
+            is_verified=True,
+        ).exists()
+
+        # Do not reveal whether an email exists.
+        if user_exists:
+            ip_address = request.META.get("REMOTE_ADDR")
+
+            try:
+                send_otp(
+                    email=email,
+                    purpose=OTPVerification.Purpose.PASSWORD_RESET,
+                    ip_address=ip_address,
+                )
+
+            except ValueError as exc:
+                return Response(
+                    {
+                        "success": False,
+                        "message": str(exc),
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+
+        return Response(
+            {
+                "success": True,
+                "message": (
+                    "If an account exists for this email, "
+                    "a password reset OTP has been sent."
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ResetPasswordView(APIView):
+    """
+    Reset customer or staff password using a verified OTP.
+    """
+
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        serializer = ResetPasswordSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        email = serializer.validated_data["email"]
+        account_type = serializer.validated_data[
+            "account_type"
+        ]
+        otp = serializer.validated_data["otp"]
+        password = serializer.validated_data["password"]
+
+        try:
+            user = User.objects.get(
+                email=email,
+                account_type=account_type,
+                is_active=True,
+                is_verified=True,
+            )
+
+        except User.DoesNotExist:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Invalid password reset request.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            verify_otp(
+                email=email,
+                otp=otp,
+                purpose=OTPVerification.Purpose.PASSWORD_RESET,
+            )
+
+        except ValueError as exc:
+            return Response(
+                {
+                    "success": False,
+                    "message": str(exc),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(password)
+
+        user.save(
+            update_fields=[
+                "password",
+                "updated_at",
+            ]
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Password reset successfully.",
             },
             status=status.HTTP_200_OK,
         )

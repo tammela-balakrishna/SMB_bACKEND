@@ -2,18 +2,20 @@ from rest_framework import serializers
 
 from .models import (
     ProductCategory,
-    VehicleBrand,
-    VehicleModel,
-    VehicleVariant,
-    VehicleYear,
-    ProductCompatibility,
-    ProductCategory,
     ProductBrand,
     Product,
     ProductImage,
     ProductCompatibility,
-);
+    VehicleBrand,
+    VehicleModel,
+    VehicleVariant,
+    VehicleYear,
+)
 
+
+# ============================================================
+# PRODUCT CATEGORY
+# ============================================================
 
 class ProductCategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,6 +36,10 @@ class ProductCategorySerializer(serializers.ModelSerializer):
         ]
 
 
+# ============================================================
+# PRODUCT BRAND
+# ============================================================
+
 class ProductBrandSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductBrand
@@ -52,6 +58,10 @@ class ProductBrandSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+
+# ============================================================
+# PRODUCT
+# ============================================================
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -75,6 +85,10 @@ class ProductSerializer(serializers.ModelSerializer):
         ]
 
 
+# ============================================================
+# PRODUCT IMAGE
+# ============================================================
+
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
@@ -90,10 +104,15 @@ class ProductImageSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "public_id",
             "created_at",
             "updated_at",
         ]
 
+
+# ============================================================
+# PRODUCT COMPATIBILITY
+# ============================================================
 
 class ProductCompatibilitySerializer(serializers.ModelSerializer):
     class Meta:
@@ -112,6 +131,7 @@ class ProductCompatibilitySerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+
 # ============================================================
 # VEHICLE BRAND
 # ============================================================
@@ -119,7 +139,6 @@ class ProductCompatibilitySerializer(serializers.ModelSerializer):
 class VehicleBrandSerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleBrand
-
         fields = [
             "id",
             "name",
@@ -128,7 +147,6 @@ class VehicleBrandSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
         read_only_fields = [
             "id",
             "created_at",
@@ -143,7 +161,6 @@ class VehicleBrandSerializer(serializers.ModelSerializer):
 class VehicleModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleModel
-
         fields = [
             "id",
             "vehicle_brand",
@@ -153,7 +170,6 @@ class VehicleModelSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
         read_only_fields = [
             "id",
             "created_at",
@@ -168,7 +184,6 @@ class VehicleModelSerializer(serializers.ModelSerializer):
 class VehicleVariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleVariant
-
         fields = [
             "id",
             "vehicle_model",
@@ -181,7 +196,6 @@ class VehicleVariantSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
         read_only_fields = [
             "id",
             "created_at",
@@ -196,7 +210,6 @@ class VehicleVariantSerializer(serializers.ModelSerializer):
 class VehicleYearSerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleYear
-
         fields = [
             "id",
             "vehicle_variant",
@@ -205,31 +218,6 @@ class VehicleYearSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-        read_only_fields = [
-            "id",
-            "created_at",
-            "updated_at",
-        ]
-
-
-# ============================================================
-# PRODUCT COMPATIBILITY
-# ============================================================
-
-class ProductCompatibilitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProductCompatibility
-
-        fields = [
-            "id",
-            "product",
-            "vehicle_year",
-            "notes",
-            "created_at",
-            "updated_at",
-        ]
-
         read_only_fields = [
             "id",
             "created_at",

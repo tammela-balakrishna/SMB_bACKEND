@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.parsers import MultiPartParser, FormParser
 
 from accounts.permissions import IsInventoryManagerOrReadOnly
 
@@ -256,6 +257,12 @@ class ProductImageViewSet(viewsets.ModelViewSet):
     ).all()
     serializer_class = ProductImageSerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
+
+    # Allow Flutter/admin clients to upload actual image files.
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+    ]
 
     def get_queryset(self):
         queryset = super().get_queryset()
