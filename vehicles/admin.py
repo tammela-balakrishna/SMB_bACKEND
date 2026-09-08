@@ -12,7 +12,6 @@ from .models import (
     ProductCompatibility,
     CategoryDiscount,
     CategoryDiscountProduct,
-
 )
 
 
@@ -51,6 +50,8 @@ class VehicleModelAdmin(admin.ModelAdmin):
         "name",
         "vehicle_brand__name",
     )
+
+
 @admin.register(VehicleVariant)
 class VehicleVariantAdmin(admin.ModelAdmin):
     list_display = (
@@ -75,6 +76,8 @@ class VehicleVariantAdmin(admin.ModelAdmin):
         "vehicle_model__name",
         "vehicle_model__vehicle_brand__name",
     )
+
+
 @admin.register(VehicleYear)
 class VehicleYearAdmin(admin.ModelAdmin):
     list_display = (
@@ -100,6 +103,8 @@ class VehicleYearAdmin(admin.ModelAdmin):
     ordering = (
         "-year",
     )
+
+
 @admin.register(ProductCategory)
 class ProductCategoryAdmin(admin.ModelAdmin):
     list_display = (
@@ -121,6 +126,8 @@ class ProductCategoryAdmin(admin.ModelAdmin):
     ordering = (
         "name",
     )
+
+
 @admin.register(ProductBrand)
 class ProductBrandAdmin(admin.ModelAdmin):
     list_display = (
@@ -142,6 +149,8 @@ class ProductBrandAdmin(admin.ModelAdmin):
     ordering = (
         "name",
     )
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
@@ -167,6 +176,8 @@ class ProductAdmin(admin.ModelAdmin):
         "product_category__name",
         "product_brand__name",
     )
+
+
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
     list_display = (
@@ -190,6 +201,8 @@ class ProductImageAdmin(admin.ModelAdmin):
         "product",
         "sort_order",
     )
+
+
 @admin.register(ProductCompatibility)
 class ProductCompatibilityAdmin(admin.ModelAdmin):
     list_display = (
@@ -210,6 +223,8 @@ class ProductCompatibilityAdmin(admin.ModelAdmin):
         "vehicle_year__vehicle_variant__vehicle_model__name",
         "vehicle_year__vehicle_variant__vehicle_model__vehicle_brand__name",
     )
+
+
 @admin.register(CategoryDiscount)
 class CategoryDiscountAdmin(admin.ModelAdmin):
     list_display = (
@@ -240,6 +255,8 @@ class CategoryDiscountAdmin(admin.ModelAdmin):
         "priority",
         "-created_at",
     )
+
+
 @admin.register(CategoryDiscountProduct)
 class CategoryDiscountProductAdmin(admin.ModelAdmin):
     list_display = (

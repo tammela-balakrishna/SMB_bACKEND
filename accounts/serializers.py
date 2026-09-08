@@ -19,9 +19,40 @@ class CustomerRegisterSerializer(serializers.Serializer):
         allow_blank=True,
     )
 
+    password = serializers.CharField(
+        min_length=8,
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    password_confirm = serializers.CharField(
+        min_length=8,
+        write_only=True,
+        trim_whitespace=False,
+    )
+
     def validate_email(self, value):
         return value.strip().lower()
 
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError(
+                {
+                    "password_confirm": "Passwords do not match."
+                }
+            )
+
+        return attrs
+class CustomerLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    def validate_email(self, value):
+        return value.strip().lower()
 class StaffCreateSerializer(serializers.Serializer):
     email = serializers.EmailField()
     first_name = serializers.CharField(max_length=100)
@@ -137,6 +168,44 @@ class VerifyOTPSerializer(serializers.Serializer):
         if not value.isdigit():
             raise serializers.ValidationError(
                 "OTP must contain only digits."
+            )
+
+        return value
+# ============================================================
+# STAFF MANAGEMENT
+# ============================================================
+
+class StaffManagementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "account_type",
+            "role",
+            "is_active",
+            "is_verified",
+        ]
+
+        read_only_fields = [
+            "id",
+            "email",
+            "account_type",
+            "is_verified",
+        ]
+
+    def validate_role(self, value):
+        allowed_roles = [
+            User.Role.INVENTORY_MANAGER,
+            User.Role.SALES_MANAGER,
+            User.Role.SUPER_ADMIN,
+        ]
+
+        if value not in allowed_roles:
+            raise serializers.ValidationError(
+                "Invalid staff role."
             )
 
         return value

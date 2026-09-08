@@ -2,6 +2,7 @@ import hashlib
 import secrets
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -13,6 +14,8 @@ OTP_LENGTH = 6
 OTP_EXPIRY_MINUTES = 5
 OTP_MAX_ATTEMPTS = 5
 OTP_RESEND_COOLDOWN_SECONDS = 60
+OTP_IP_LIMIT = 10
+OTP_IP_WINDOW_SECONDS = 3600
 
 
 def generate_otp():
@@ -34,12 +37,28 @@ def hash_otp(otp: str) -> str:
 def send_otp(
     email: str,
     purpose: str = OTPVerification.Purpose.REGISTRATION,
+    ip_address: str | None = None,
 ):
     """
     Generate, store and email a new OTP.
     """
 
     email = email.strip().lower()
+
+    if ip_address:
+        ip_key = f"otp-ip:{ip_address}"
+        ip_requests = cache.get(ip_key, 0)
+
+        if ip_requests >= OTP_IP_LIMIT:
+            raise ValueError(
+                "Too many OTP requests. Please try again later."
+            )
+
+        cache.set(
+            ip_key,
+            ip_requests + 1,
+            timeout=OTP_IP_WINDOW_SECONDS,
+        )
 
     now = timezone.now()
 

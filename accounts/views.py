@@ -14,7 +14,9 @@ from .serializers import (
     CustomerRegisterSerializer,
     StaffCreateSerializer,
     StaffLoginSerializer,
+    CustomerLoginSerializer,
     StaffActivateSerializer,
+    StaffManagementSerializer,
 )
 from .services.otp_service import (
     send_otp,
@@ -66,11 +68,19 @@ class CustomerRegisterView(APIView):
                 "last_name",
                 "",
             ),
+            password=serializer.validated_data[
+                "password"
+            ],
             account_type=User.AccountType.CUSTOMER,
             role=None,
             is_staff=False,
             is_superuser=False,
             is_verified=False,
+        )
+
+        send_otp(
+            email=user.email,
+            purpose=OTPVerification.Purpose.EMAIL_VERIFY,
         )
 
         return Response(
@@ -88,19 +98,136 @@ class CustomerRegisterView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+class CustomerLoginView(APIView):
+    """
+    Login for customer accounts using email and password.
+    """
 
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        serializer = CustomerLoginSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        email = serializer.validated_data["email"]
+        password = serializer.validated_data["password"]
+
+        user = authenticate(
+            request=request,
+            email=email,
+            password=password,
+        )
+
+        if user is None:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Invalid email or password.",
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if user.account_type != User.AccountType.CUSTOMER:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Customer login is only available for customer accounts.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not user.is_active:
+            return Response(
+                {
+                    "success": False,
+                    "message": "This customer account is inactive.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not user.is_verified:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Please verify your email before logging in.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response(
+            {
+                "success": True,
+                "message": "Customer login successful.",
+                "tokens": {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                },
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "account_type": user.account_type,
+                    "role": user.role,
+                    "is_verified": user.is_verified,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
 class StaffCreateView(APIView):
+    """
+    Staff management endpoint.
+
+    GET:
+        List all staff accounts.
+
+    POST:
+        Create a new staff account.
+
+    Access:
+        Super Admin only.
+    """
+
     permission_classes = [
         IsAuthenticated,
         IsSuperAdmin,
     ]
+
+    def get(self, request):
+        staff_users = User.objects.filter(
+            account_type=User.AccountType.STAFF
+        ).order_by("-id")
+
+        serializer = StaffManagementSerializer(
+            staff_users,
+            many=True,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "count": staff_users.count(),
+                "staff": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request):
         serializer = StaffCreateSerializer(
             data=request.data
         )
 
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(
+            raise_exception=True
+        )
 
         user = User.objects.create_user(
             email=serializer.validated_data["email"],
@@ -127,10 +254,147 @@ class StaffCreateView(APIView):
                     "last_name": user.last_name,
                     "account_type": user.account_type,
                     "role": user.role,
+                    "is_active": user.is_active,
                     "is_verified": user.is_verified,
                 },
             },
             status=status.HTTP_201_CREATED,
+        )
+class StaffDetailView(APIView):
+    """
+    Manage an individual staff account.
+
+    GET:
+        View staff details.
+
+    PATCH:
+        Update staff information.
+
+    DELETE:
+        Deactivate staff account.
+
+    Access:
+        Super Admin only.
+    """
+
+    permission_classes = [
+        IsAuthenticated,
+        IsSuperAdmin,
+    ]
+
+    def get_staff(self, pk):
+        try:
+            return User.objects.get(
+                pk=pk,
+                account_type=User.AccountType.STAFF,
+            )
+        except User.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        user = self.get_staff(pk)
+
+        if user is None:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Staff account not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = StaffManagementSerializer(user)
+
+        return Response(
+            {
+                "success": True,
+                "staff": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, pk):
+        user = self.get_staff(pk)
+
+        if user is None:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Staff account not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Prevent Super Admin from modifying themselves
+        # through this staff-management endpoint.
+        if user.id == request.user.id:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "You cannot modify your own account "
+                        "through staff management."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = StaffManagementSerializer(
+            user,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Staff account updated successfully.",
+                "staff": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, pk):
+        user = self.get_staff(pk)
+
+        if user is None:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Staff account not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Prevent Super Admin from deactivating themselves.
+        if user.id == request.user.id:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "You cannot deactivate your own account."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.is_active = False
+        user.save(
+            update_fields=["is_active"]
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Staff account deactivated successfully.",
+            },
+            status=status.HTTP_200_OK,
         )
 class SendOTPView(APIView):
     """
@@ -151,11 +415,13 @@ class SendOTPView(APIView):
 
         email = serializer.validated_data["email"]
         purpose = serializer.validated_data["purpose"]
+        ip_address = request.META.get("REMOTE_ADDR")
 
         try:
             send_otp(
                 email=email,
                 purpose=purpose,
+                ip_address=ip_address,
             )
 
         except ValueError as exc:
