@@ -1,16 +1,21 @@
-from rest_framework import serializers
-
-from .models import OTPVerification
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-User = get_user_model()
-class CustomerRegisterSerializer(serializers.Serializer):
+from .models import OTPVerification
 
+
+User = get_user_model()
+
+
+# ============================================================
+# CUSTOMER REGISTRATION
+# ============================================================
+
+class CustomerRegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     first_name = serializers.CharField(
-        max_length=100
+        max_length=100,
     )
 
     last_name = serializers.CharField(
@@ -38,11 +43,17 @@ class CustomerRegisterSerializer(serializers.Serializer):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
                 {
-                    "password_confirm": "Passwords do not match."
+                    "password_confirm": "Passwords do not match.",
                 }
             )
 
         return attrs
+
+
+# ============================================================
+# CUSTOMER LOGIN
+# ============================================================
+
 class CustomerLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -53,14 +64,25 @@ class CustomerLoginSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         return value.strip().lower()
+
+
+# ============================================================
+# STAFF CREATE
+# ============================================================
+
 class StaffCreateSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    first_name = serializers.CharField(max_length=100)
+
+    first_name = serializers.CharField(
+        max_length=100,
+    )
+
     last_name = serializers.CharField(
         max_length=100,
         required=False,
         allow_blank=True,
     )
+
     role = serializers.ChoiceField(
         choices=[
             (
@@ -89,13 +111,20 @@ class StaffCreateSerializer(serializers.Serializer):
         if User.objects.filter(email=attrs["email"]).exists():
             raise serializers.ValidationError(
                 {
-                    "email": "A user with this email already exists."
+                    "email": "A user with this email already exists.",
                 }
             )
 
         return attrs
+
+
+# ============================================================
+# STAFF LOGIN
+# ============================================================
+
 class StaffLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
     password = serializers.CharField(
         write_only=True,
         trim_whitespace=False,
@@ -103,8 +132,15 @@ class StaffLoginSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         return value.strip().lower()
+
+
+# ============================================================
+# SEND OTP
+# ============================================================
+
 class SendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
     purpose = serializers.ChoiceField(
         choices=OTPVerification.Purpose.choices,
         default=OTPVerification.Purpose.REGISTRATION,
@@ -112,18 +148,27 @@ class SendOTPSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         return value.strip().lower()
+
+
+# ============================================================
+# STAFF ACTIVATION
+# ============================================================
+
 class StaffActivateSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
     otp = serializers.CharField(
         min_length=6,
         max_length=6,
         trim_whitespace=True,
     )
+
     password = serializers.CharField(
         min_length=8,
         write_only=True,
         trim_whitespace=False,
     )
+
     password_confirm = serializers.CharField(
         min_length=8,
         write_only=True,
@@ -138,24 +183,33 @@ class StaffActivateSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 "OTP must contain only digits."
             )
+
         return value
 
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
                 {
-                    "password_confirm": "Passwords do not match."
+                    "password_confirm": "Passwords do not match.",
                 }
             )
 
         return attrs
+
+
+# ============================================================
+# VERIFY OTP
+# ============================================================
+
 class VerifyOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
     otp = serializers.CharField(
         min_length=6,
         max_length=6,
         trim_whitespace=True,
     )
+
     purpose = serializers.ChoiceField(
         choices=OTPVerification.Purpose.choices,
         default=OTPVerification.Purpose.REGISTRATION,
@@ -171,6 +225,8 @@ class VerifyOTPSerializer(serializers.Serializer):
             )
 
         return value
+
+
 # ============================================================
 # STAFF MANAGEMENT
 # ============================================================
@@ -178,6 +234,7 @@ class VerifyOTPSerializer(serializers.Serializer):
 class StaffManagementSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
+
         fields = [
             "id",
             "email",
@@ -209,6 +266,23 @@ class StaffManagementSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+
+# ============================================================
+# PASSWORD RESET
+# ============================================================
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    account_type = serializers.ChoiceField(
+        choices=User.AccountType.choices,
+    )
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -249,7 +323,7 @@ class ResetPasswordSerializer(serializers.Serializer):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
                 {
-                    "password_confirm": "Passwords do not match."
+                    "password_confirm": "Passwords do not match.",
                 }
             )
 
