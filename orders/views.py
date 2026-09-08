@@ -198,30 +198,39 @@ class OrderViewSet(viewsets.ModelViewSet):
             ).data,
         )
 
-    @action(
-        detail=True,
-        methods=["patch"],
-        permission_classes=[IsOrderManager],
-        url_path="address",
+def update_status(self, request, *args, **kwargs):
+    order = self.get_object()
+
+    serializer = OrderStatusUpdateSerializer(
+        order,
+        data=request.data,
+        partial=True,
     )
-    def update_address(self, request, *args, **kwargs):
-        order = self.get_object()
 
-        serializer = OrderAddressUpdateSerializer(
+    serializer.is_valid(raise_exception=True)
+
+    with transaction.atomic():
+        order = serializer.save()
+
+        if (
+            order.status == Order.OrderStatus.DELIVERED
+            and order.payment_method == Order.PaymentMethod.COD
+            and order.payment_status == Order.PaymentStatus.PENDING
+        ):
+            order.payment_status = Order.PaymentStatus.PAID
+            order.save(
+                update_fields=[
+                    "payment_status",
+                    "updated_at",
+                ]
+            )
+
+    return Response(
+        OrderSerializer(
             order,
-            data=request.data,
-            partial=True,
-        )
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(
-            OrderSerializer(
-                order,
-                context={"request": request},
-            ).data,
-        )
+            context={"request": request},
+        ).data,
+    )
 
     @staticmethod
     def _generate_order_number():

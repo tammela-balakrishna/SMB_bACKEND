@@ -38,13 +38,22 @@ if DJANGO_ENV == "production" and not SECRET_KEY:
 SECRET_KEY = SECRET_KEY or "dev-only-change-this-secret-key"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv(
-        "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1",
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "",
     ).split(",")
-    if host.strip()
+    if origin.strip()
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "",
+    ).split(",")
+    if origin.strip()
 ]
 
 
@@ -69,7 +78,8 @@ INSTALLED_APPS = [
     "accounts",
     "vehicles",
     "orders",
-
+    "addresses",
+    
 ]
 
 MIDDLEWARE = [
@@ -234,3 +244,14 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
+SECURE_SSL_REDIRECT = True
+
+SESSION_COOKIE_SECURE = True
+
+CSRF_COOKIE_SECURE = True
+
+SECURE_HSTS_SECONDS = 31536000
+
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+SECURE_HSTS_PRELOAD = True

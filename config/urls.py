@@ -33,4 +33,8 @@ urlpatterns = [
         "api/v1/orders/",
         include("orders.urls"),
     ),
+    path(
+    "api/v1/addresses/",
+    include("addresses.urls"),
+),
 ]
