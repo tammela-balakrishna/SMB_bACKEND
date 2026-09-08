@@ -97,31 +97,10 @@ urlpatterns = [
         StaffActivateView.as_view(),
         name="staff-activate",
     ),
-    # ============================================================
-# STAFF
-# ============================================================
 
-path(
-    "staff/",
-    StaffCreateView.as_view(),
-    name="staff-management",
-),
-
-path(
-    "staff/<int:pk>/",
-    StaffDetailView.as_view(),
-    name="staff-detail",
-),
-
-path(
-    "staff/login/",
-    StaffLoginView.as_view(),
-    name="staff-login",
-),
-
-path(
-    "staff/activate/",
-    StaffActivateView.as_view(),
-    name="staff-activate",
-),
+    path(
+        "staff/<int:pk>/",
+        StaffDetailView.as_view(),
+        name="staff-detail",
+    ),
 ]

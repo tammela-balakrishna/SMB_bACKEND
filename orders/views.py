@@ -14,9 +14,10 @@ from vehicles.models import Product
 
 from .models import Order, OrderItem
 from .serializers import (
+    OrderAddressUpdateSerializer,
     OrderCreateSerializer,
-    OrderStatusUpdateSerializer,
     OrderSerializer,
+    OrderStatusUpdateSerializer,
 )
 
 
@@ -180,11 +181,38 @@ class OrderViewSet(viewsets.ModelViewSet):
     )
     def update_status(self, request, *args, **kwargs):
         order = self.get_object()
+
         serializer = OrderStatusUpdateSerializer(
             order,
             data=request.data,
             partial=True,
         )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(
+            OrderSerializer(
+                order,
+                context={"request": request},
+            ).data,
+        )
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        permission_classes=[IsOrderManager],
+        url_path="address",
+    )
+    def update_address(self, request, *args, **kwargs):
+        order = self.get_object()
+
+        serializer = OrderAddressUpdateSerializer(
+            order,
+            data=request.data,
+            partial=True,
+        )
+
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
