@@ -229,6 +229,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             "is_active"
         )
 
+        is_featured = self.request.query_params.get(
+            "is_featured"
+        )
+
         if category_id:
             queryset = queryset.filter(
                 product_category_id=category_id
@@ -242,6 +246,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         if is_active is not None:
             queryset = queryset.filter(
                 is_active=is_active.lower() == "true"
+            )
+
+        if is_featured is not None:
+            queryset = queryset.filter(
+                is_featured=is_featured.lower() == "true"
             )
 
         return queryset.order_by("name")

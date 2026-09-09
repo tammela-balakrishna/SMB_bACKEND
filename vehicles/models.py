@@ -238,6 +238,10 @@ class Product(TimeStampedModel):
         default=True,
     )
 
+    is_featured = models.BooleanField(
+        default=False,
+    )
+
     class Meta:
         db_table = "products"
         ordering = ["name"]

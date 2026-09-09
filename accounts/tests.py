@@ -55,3 +55,13 @@ class OTPThrottleTests(TestCase):
 			)
 
 		self.assertEqual(send_mail.call_count, OTP_IP_LIMIT)
+
+	@patch("accounts.services.otp_service.send_mail")
+	def test_otp_send_failure_raises_clear_error(self, send_mail):
+		send_mail.side_effect = RuntimeError("SMTP authentication failed")
+
+		with self.assertRaisesRegex(RuntimeError, "SMTP send failed"):
+			send_otp(
+				email="user@example.com",
+				purpose=OTPVerification.Purpose.PASSWORD_RESET,
+			)

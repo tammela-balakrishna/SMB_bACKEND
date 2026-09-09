@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import secrets
 from datetime import timedelta
 
@@ -8,6 +9,8 @@ from django.core.mail import send_mail
 from django.utils import timezone
 
 from ..models import OTPVerification
+
+logger = logging.getLogger(__name__)
 
 
 OTP_LENGTH = 6
@@ -101,19 +104,33 @@ def send_otp(
         ),
     )
 
-    send_mail(
-        subject="SMB Auto Parts - Verification Code",
-        message=(
-            f"Your verification code is: {otp}\n\n"
-            f"This code will expire in "
-            f"{OTP_EXPIRY_MINUTES} minutes.\n\n"
-            "If you did not request this code, "
-            "please ignore this email."
-        ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[email],
-        fail_silently=False,
+    logger.info(
+        "Password reset OTP requested for user account",
+        extra={"email": email, "purpose": purpose},
     )
+
+    try:
+        send_mail(
+            subject="SMB Auto Parts - Verification Code",
+            message=(
+                f"Your verification code is: {otp}\n\n"
+                f"This code will expire in "
+                f"{OTP_EXPIRY_MINUTES} minutes.\n\n"
+                "If you did not request this code, "
+                "please ignore this email."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+    except Exception:
+        otp_record.is_used = True
+        otp_record.save(update_fields=["is_used"])
+        logger.exception(
+            "SMTP send failed while sending OTP",
+            extra={"email": email, "purpose": purpose},
+        )
+        raise RuntimeError("SMTP send failed. Please try again later.")
 
     return otp_record
 def verify_otp(

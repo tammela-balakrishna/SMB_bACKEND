@@ -75,6 +75,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "description",
             "mrp",
             "is_active",
+            "is_featured",
             "created_at",
             "updated_at",
         ]

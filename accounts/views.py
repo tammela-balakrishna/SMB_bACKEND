@@ -764,6 +764,14 @@ class ForgotPasswordView(APIView):
                     },
                     status=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
+            except RuntimeError as exc:
+                return Response(
+                    {
+                        "success": False,
+                        "message": str(exc),
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
         return Response(
             {
