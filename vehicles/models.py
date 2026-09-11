@@ -286,10 +286,36 @@ class ProductCompatibility(TimeStampedModel):
         related_name="compatibilities",
     )
 
+    vehicle_brand = models.ForeignKey(
+        VehicleBrand,
+        on_delete=models.CASCADE,
+        related_name="product_compatibilities",
+        null=True,
+        blank=True,
+    )
+
+    vehicle_model = models.ForeignKey(
+        VehicleModel,
+        on_delete=models.CASCADE,
+        related_name="product_compatibilities",
+        null=True,
+        blank=True,
+    )
+
+    vehicle_variant = models.ForeignKey(
+        VehicleVariant,
+        on_delete=models.CASCADE,
+        related_name="product_compatibilities",
+        null=True,
+        blank=True,
+    )
+
     vehicle_year = models.ForeignKey(
         VehicleYear,
         on_delete=models.CASCADE,
         related_name="product_compatibilities",
+        null=True,
+        blank=True,
     )
 
     notes = models.TextField(
@@ -299,19 +325,174 @@ class ProductCompatibility(TimeStampedModel):
 
     class Meta:
         db_table = "product_compatibilities"
-        ordering = ["vehicle_year"]
+        ordering = [
+            "vehicle_brand",
+            "vehicle_model",
+            "vehicle_variant",
+            "vehicle_year",
+        ]
 
         constraints = [
             models.UniqueConstraint(
+                fields=["product", "vehicle_brand"],
+                condition=models.Q(
+                    vehicle_model__isnull=True,
+                    vehicle_variant__isnull=True,
+                    vehicle_year__isnull=True,
+                ),
+                name="unique_product_vehicle_brand",
+            ),
+            models.UniqueConstraint(
+                fields=["product", "vehicle_model"],
+                condition=models.Q(
+                    vehicle_variant__isnull=True,
+                    vehicle_year__isnull=True,
+                ),
+                name="unique_product_vehicle_model",
+            ),
+            models.UniqueConstraint(
+                fields=["product", "vehicle_variant"],
+                condition=models.Q(
+                    vehicle_year__isnull=True,
+                ),
+                name="unique_product_vehicle_variant",
+            ),
+            models.UniqueConstraint(
                 fields=["product", "vehicle_year"],
+                condition=models.Q(
+                    vehicle_year__isnull=False,
+                ),
                 name="unique_product_vehicle_year",
             ),
         ]
 
+    def clean(self):
+        super().clean()
+
+        if not any([
+            self.vehicle_brand_id,
+            self.vehicle_model_id,
+            self.vehicle_variant_id,
+            self.vehicle_year_id,
+        ]):
+            raise ValidationError(
+                "At least one vehicle compatibility level is required."
+            )
+
+        if self.vehicle_year_id:
+            year = self.vehicle_year
+
+            expected_variant_id = year.vehicle_variant_id
+            expected_model_id = year.vehicle_variant.vehicle_model_id
+            expected_brand_id = (
+                year.vehicle_variant.vehicle_model.vehicle_brand_id
+            )
+
+            if (
+                self.vehicle_variant_id
+                and self.vehicle_variant_id != expected_variant_id
+            ):
+                raise ValidationError(
+                    "Selected variant does not belong to the selected year."
+                )
+
+            if (
+                self.vehicle_model_id
+                and self.vehicle_model_id != expected_model_id
+            ):
+                raise ValidationError(
+                    "Selected model does not belong to the selected year."
+                )
+
+            if (
+                self.vehicle_brand_id
+                and self.vehicle_brand_id != expected_brand_id
+            ):
+                raise ValidationError(
+                    "Selected brand does not belong to the selected year."
+                )
+
+        if self.vehicle_variant_id:
+            variant = self.vehicle_variant
+
+            expected_model_id = variant.vehicle_model_id
+            expected_brand_id = (
+                variant.vehicle_model.vehicle_brand_id
+            )
+
+            if (
+                self.vehicle_model_id
+                and self.vehicle_model_id != expected_model_id
+            ):
+                raise ValidationError(
+                    "Selected model does not belong to the selected variant."
+                )
+
+            if (
+                self.vehicle_brand_id
+                and self.vehicle_brand_id != expected_brand_id
+            ):
+                raise ValidationError(
+                    "Selected brand does not belong to the selected variant."
+                )
+
+        if self.vehicle_model_id:
+            expected_brand_id = (
+                self.vehicle_model.vehicle_brand_id
+            )
+
+            if (
+                self.vehicle_brand_id
+                and self.vehicle_brand_id != expected_brand_id
+            ):
+                raise ValidationError(
+                    "Selected brand does not belong to the selected model."
+                )
+
+    def save(self, *args, **kwargs):
+        if self.vehicle_year_id:
+            year = self.vehicle_year
+            self.vehicle_variant_id = year.vehicle_variant_id
+            self.vehicle_model_id = (
+                year.vehicle_variant.vehicle_model_id
+            )
+            self.vehicle_brand_id = (
+                year.vehicle_variant.vehicle_model.vehicle_brand_id
+            )
+
+        elif self.vehicle_variant_id:
+            variant = self.vehicle_variant
+            self.vehicle_model_id = variant.vehicle_model_id
+            self.vehicle_brand_id = (
+                variant.vehicle_model.vehicle_brand_id
+            )
+
+        elif self.vehicle_model_id:
+            self.vehicle_brand_id = (
+                self.vehicle_model.vehicle_brand_id
+            )
+
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.product} ↔ {self.vehicle_year}" 
-from django.core.exceptions import ValidationError
-from django.db import models
+        target = []
+
+        if self.vehicle_brand:
+            target.append(self.vehicle_brand.name)
+
+        if self.vehicle_model:
+            target.append(self.vehicle_model.name)
+
+        if self.vehicle_variant:
+            target.append(self.vehicle_variant.name)
+
+        if self.vehicle_year:
+            target.append(str(self.vehicle_year.year))
+
+        compatibility = " ? ".join(target)
+
+        return f"{self.product} ? {compatibility}"
 
 
 class CategoryDiscount(TimeStampedModel):

@@ -121,6 +121,9 @@ class ProductCompatibilitySerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "product",
+            "vehicle_brand",
+            "vehicle_model",
+            "vehicle_variant",
             "vehicle_year",
             "notes",
             "created_at",
@@ -131,11 +134,6 @@ class ProductCompatibilitySerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-
-# ============================================================
-# VEHICLE BRAND
-# ============================================================
 
 class VehicleBrandSerializer(serializers.ModelSerializer):
     class Meta:

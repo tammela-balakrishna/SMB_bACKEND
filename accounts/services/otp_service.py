@@ -3,9 +3,9 @@ import logging
 import secrets
 from datetime import timedelta
 
-from django.core.cache import cache
+import resend
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.cache import cache
 from django.utils import timezone
 
 from ..models import OTPVerification
@@ -43,7 +43,7 @@ def send_otp(
     ip_address: str | None = None,
 ):
     """
-    Generate, store and email a new OTP.
+    Generate, store and email a new OTP using Resend.
     """
 
     email = email.strip().lower()
@@ -105,105 +105,136 @@ def send_otp(
     )
 
     logger.info(
-        "Password reset OTP requested for user account",
-        extra={"email": email, "purpose": purpose},
+        "OTP requested for user account",
+        extra={
+            "email": email,
+            "purpose": purpose,
+        },
     )
 
     try:
-        send_mail(
-            subject="SMB Auto Parts - Verification Code",
-            message=(
-                f"Your verification code is: {otp}\n\n"
-                f"This code will expire in "
-                f"{OTP_EXPIRY_MINUTES} minutes.\n\n"
-                "If you did not request this code, "
-                "please ignore this email."
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
+        resend.api_key = settings.RESEND_API_KEY
+
+        resend.Emails.send(
+            {
+                "from": settings.DEFAULT_FROM_EMAIL,
+                "to": [email],
+                "subject": "SMB Auto Parts - Verification Code",
+                "html": f"""
+                    <div>
+                        <h2>SMB Auto Parts</h2>
+
+                        <p>Your verification code is:</p>
+
+                        <h1>{otp}</h1>
+
+                        <p>
+                            This code will expire in
+                            {OTP_EXPIRY_MINUTES} minutes.
+                        </p>
+
+                        <p>
+                            If you did not request this code,
+                            please ignore this email.
+                        </p>
+                    </div>
+                """,
+            }
         )
+
     except Exception:
         otp_record.is_used = True
-        otp_record.save(update_fields=["is_used"])
-        logger.exception(
-            "SMTP send failed while sending OTP",
-            extra={"email": email, "purpose": purpose},
+        otp_record.save(
+            update_fields=["is_used"]
         )
-        raise RuntimeError("SMTP send failed. Please try again later.")
+
+        logger.exception(
+            "Resend email failed while sending OTP",
+            extra={
+                "email": email,
+                "purpose": purpose,
+            },
+        )
+
+        raise RuntimeError(
+            "Unable to send verification email. "
+            "Please try again later."
+        )
 
     return otp_record
+
+
 def verify_otp(
-        email: str,
-        otp: str,
-        purpose: str,
-    ):
-        """
-        Verify an OTP securely.
-        """
+    email: str,
+    otp: str,
+    purpose: str,
+):
+    """
+    Verify an OTP securely.
+    """
 
-        email = email.strip().lower()
-        otp = otp.strip()
+    email = email.strip().lower()
+    otp = otp.strip()
 
-        otp_record = (
-            OTPVerification.objects
-            .filter(
-                email=email,
-                purpose=purpose,
-                is_used=False,
-            )
-            .order_by("-created_at")
-            .first()
+    otp_record = (
+        OTPVerification.objects
+        .filter(
+            email=email,
+            purpose=purpose,
+            is_used=False,
+        )
+        .order_by("-created_at")
+        .first()
+    )
+
+    if not otp_record:
+        raise ValueError(
+            "Invalid or expired OTP."
         )
 
-        if not otp_record:
-            raise ValueError(
-                "Invalid or expired OTP."
-            )
-
-        if otp_record.is_expired():
-            otp_record.is_used = True
-            otp_record.save(
-                update_fields=["is_used"]
-            )
-
-            raise ValueError(
-                "OTP has expired."
-            )
-
-        if otp_record.attempts >= OTP_MAX_ATTEMPTS:
-            otp_record.is_used = True
-            otp_record.save(
-                update_fields=["is_used"]
-            )
-
-            raise ValueError(
-                "Maximum OTP attempts exceeded."
-            )
-
-        otp_record.attempts += 1
-
-        submitted_hash = hash_otp(otp)
-
-        if not secrets.compare_digest(
-            otp_record.otp_hash,
-            submitted_hash,
-        ):
-            otp_record.save(
-                update_fields=["attempts"]
-            )
-
-            raise ValueError(
-                "Invalid OTP."
-            )
-
+    if otp_record.is_expired():
         otp_record.is_used = True
-
         otp_record.save(
-            update_fields=[
-                "attempts",
-                "is_used",
-            ]
+            update_fields=["is_used"]
         )
 
-        return True
+        raise ValueError(
+            "OTP has expired."
+        )
+
+    if otp_record.attempts >= OTP_MAX_ATTEMPTS:
+        otp_record.is_used = True
+        otp_record.save(
+            update_fields=["is_used"]
+        )
+
+        raise ValueError(
+            "Maximum OTP attempts exceeded."
+        )
+
+    otp_record.attempts += 1
+
+    submitted_hash = hash_otp(otp)
+
+    if not secrets.compare_digest(
+        otp_record.otp_hash,
+        submitted_hash,
+    ):
+        otp_record.save(
+            update_fields=["attempts"]
+        )
+
+        raise ValueError(
+            "Invalid OTP."
+        )
+
+    otp_record.is_used = True
+
+    otp_record.save(
+        update_fields=[
+            "attempts",
+            "is_used",
+        ]
+    )
+
+    return True

@@ -1,4 +1,3 @@
-from django.db.models import Q
 from rest_framework import viewsets
 from rest_framework.parsers import MultiPartParser, FormParser
 
@@ -321,95 +320,29 @@ class ProductCompatibilityViewSet(viewsets.ModelViewSet):
         year_id = self.request.query_params.get("vehicle_year")
 
         if product_id:
-            queryset = queryset.filter(product_id=product_id)
+            queryset = queryset.filter(
+                product_id=product_id,
+            )
 
+        if brand_id:
+            queryset = queryset.filter(
+                vehicle_brand_id=brand_id,
+            )
 
-        # Hierarchical vehicle matching.
-        #
-        # Brand selection:
-        #   Brand-level mappings only.
-        #
-        # Model selection:
-        #   Brand-level + Model-level mappings.
-        #
-        # Variant selection:
-        #   Brand-level + Model-level + Variant-level mappings.
-        #
-        # Year selection:
-        #   Brand-level + Model-level + Variant-level + Year-level mappings.
+        if model_id:
+            queryset = queryset.filter(
+                vehicle_model_id=model_id,
+            )
+
+        if variant_id:
+            queryset = queryset.filter(
+                vehicle_variant_id=variant_id,
+            )
 
         if year_id:
             queryset = queryset.filter(
-                Q(
-                    vehicle_year_id=year_id,
-                    vehicle_brand_id=brand_id,
-                    vehicle_model_id=model_id,
-                    vehicle_variant_id=variant_id,
-                )
-                | Q(
-                    vehicle_year__isnull=True,
-                    vehicle_variant_id=variant_id,
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                )
-                | Q(
-                    vehicle_year__isnull=True,
-                    vehicle_variant__isnull=True,
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                )
-                | Q(
-                    vehicle_year__isnull=True,
-                    vehicle_variant__isnull=True,
-                    vehicle_model__isnull=True,
-                    vehicle_brand_id=brand_id,
-                )
-            )
-
-        elif variant_id:
-            queryset = queryset.filter(
-                Q(
-                    vehicle_variant_id=variant_id,
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                    vehicle_year__isnull=True,
-                )
-                | Q(
-                    vehicle_variant__isnull=True,
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                    vehicle_year__isnull=True,
-                )
-                | Q(
-                    vehicle_variant__isnull=True,
-                    vehicle_model__isnull=True,
-                    vehicle_brand_id=brand_id,
-                    vehicle_year__isnull=True,
-                )
-            )
-
-        elif model_id:
-            queryset = queryset.filter(
-                Q(
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                    vehicle_variant__isnull=True,
-                    vehicle_year__isnull=True,
-                )
-                | Q(
-                    vehicle_model__isnull=True,
-                    vehicle_variant__isnull=True,
-                    vehicle_year__isnull=True,
-                    vehicle_brand_id=brand_id,
-                )
-            )
-
-        elif brand_id:
-            queryset = queryset.filter(
-                vehicle_brand_id=brand_id,
-                vehicle_model__isnull=True,
-                vehicle_variant__isnull=True,
-                vehicle_year__isnull=True,
+                vehicle_year_id=year_id,
             )
 
         return queryset
+
