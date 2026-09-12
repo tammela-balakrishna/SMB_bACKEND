@@ -20,6 +20,7 @@ class VehicleBrandAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "name",
+        "logo",
         "is_active",
         "created_at",
         "updated_at",
@@ -36,6 +37,7 @@ class VehicleModelAdmin(admin.ModelAdmin):
         "id",
         "vehicle_brand",
         "name",
+        "image",
         "is_active",
         "created_at",
         "updated_at",
@@ -61,6 +63,7 @@ class VehicleVariantAdmin(admin.ModelAdmin):
         "engine_cc",
         "fuel_type",
         "transmission",
+        "image",
         "is_active",
         "created_at",
     )
@@ -277,3 +280,5 @@ class CategoryDiscountProductAdmin(admin.ModelAdmin):
         "product__sku",
         "category_discount__product_category__name",
     )
+
+
