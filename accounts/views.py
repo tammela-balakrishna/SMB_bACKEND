@@ -1045,19 +1045,19 @@ class LogoutView(APIView):
             token = RefreshToken(refresh_token)
             token.blacklist()
 
-        except Exception:
+        except Exception as e:
+            print(f"FIREBASE ERROR: {type(e).__name__}: {e}")
             return Response(
                 {
                     "success": False,
-                    "message": "Invalid or already blacklisted refresh token.",
+                    "message": "Invalid or expired Firebase ID token.",
                 },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(
-            {
+                status=status.HTTP_401_UNAUTHORIZED,
+    )
+            return Response(
+                {
                 "success": True,
                 "message": "Logged out successfully.",
-            },
-            status=status.HTTP_200_OK,
+                 },
+                status=status.HTTP_200_OK,
         )
