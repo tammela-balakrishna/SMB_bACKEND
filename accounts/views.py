@@ -4,10 +4,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
+from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsSuperAdmin
 from .models import OTPVerification
+from firebase_admin import auth as firebase_auth
+from notifications.firebase import initialize_firebase
+import secrets
 
 from .serializers import (
     SendOTPSerializer,
@@ -185,6 +189,170 @@ class CustomerLoginView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+class CustomerGoogleLoginView(APIView):
+    """
+    Login or register a customer using a Firebase ID token
+    obtained from Google Sign-In.
+    """
+
+    authentication_classes = []
+    permission_classes = []
+
+    def post(self, request):
+        id_token = request.data.get("id_token")
+
+        if not id_token:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Firebase ID token is required.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            initialize_firebase()
+
+            decoded_token = firebase_auth.verify_id_token(id_token)
+
+        except Exception:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Invalid or expired Firebase ID token.",
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        firebase_uid = decoded_token.get("uid")
+        email = (decoded_token.get("email") or "").strip().lower()
+        email_verified = decoded_token.get("email_verified", False)
+
+        firebase_info = decoded_token.get("firebase", {})
+        sign_in_provider = firebase_info.get("sign_in_provider")
+
+        if not firebase_uid or not email:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Firebase account does not contain a valid email.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not email_verified:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Google email must be verified.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if sign_in_provider != "google.com":
+            return Response(
+                {
+                    "success": False,
+                    "message": "Only Google Sign-In is supported.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        user = User.objects.filter(
+            firebase_uid=firebase_uid,
+        ).first()
+
+        if user is None:
+            user = User.objects.filter(
+                email=email,
+            ).first()
+
+        if user is not None:
+            if user.account_type != User.AccountType.CUSTOMER:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Google Sign-In is only available for customer accounts.",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            if not user.is_active:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "This customer account is inactive.",
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            if user.firebase_uid and user.firebase_uid != firebase_uid:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "This email is already linked to another Google account.",
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            user.firebase_uid = firebase_uid
+            user.is_verified = True
+
+            user.save(
+                update_fields=[
+                    "firebase_uid",
+                    "is_verified",
+                    "updated_at",
+                ]
+            )
+
+        else:
+            display_name = (
+                decoded_token.get("name")
+                or email.split("@")[0]
+            )
+
+            name_parts = display_name.strip().split(maxsplit=1)
+
+            first_name = name_parts[0][:100]
+            last_name = name_parts[1][:100] if len(name_parts) > 1 else ""
+
+            user = User.objects.create_user(
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                password=secrets.token_urlsafe(32),
+                account_type=User.AccountType.CUSTOMER,
+                role=None,
+                is_staff=False,
+                is_superuser=False,
+                is_verified=True,
+                firebase_uid=firebase_uid,
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response(
+            {
+                "success": True,
+                "message": "Google customer login successful.",
+                "tokens": {
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
+                },
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "account_type": user.account_type,
+                    "role": user.role,
+                    "is_verified": user.is_verified,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
 class StaffCreateView(APIView):
     """
     Staff management endpoint.

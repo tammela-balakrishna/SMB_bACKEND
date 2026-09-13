@@ -7,6 +7,7 @@ from .views import (
     VerifyOTPView,
     CustomerRegisterView,
     CustomerLoginView,
+    CustomerGoogleLoginView,
     MeView,
     LogoutView,
     StaffCreateView,
@@ -36,6 +37,11 @@ urlpatterns = [
         name="customer-login",
     ),
 
+    path(
+        "customer/google/",
+        CustomerGoogleLoginView.as_view(),
+        name="customer-google-login",
+    ),
     path(
         "send-otp/",
         SendOTPView.as_view(),
@@ -117,3 +123,5 @@ urlpatterns = [
         name="staff-detail",
     ),
 ]
+
+

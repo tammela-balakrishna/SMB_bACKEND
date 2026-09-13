@@ -20,6 +20,14 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_index=True,
     )
 
+    firebase_uid = models.CharField(
+        max_length=128,
+        unique=True,
+        null=True,
+        blank=True,
+        db_index=True,
+    )
+
     first_name = models.CharField(
         max_length=100,
     )
@@ -120,3 +128,6 @@ class OTPVerification(models.Model):
 
     def __str__(self):
         return f"{self.email} - {self.purpose}"
+
+
+

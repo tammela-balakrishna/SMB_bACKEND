@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.permissions import IsOrderManager
+from notifications.services import create_order_notification
 from vehicles.models import Product
 
 from .models import Order, OrderItem
@@ -136,6 +137,11 @@ class OrderViewSet(viewsets.ModelViewSet):
                 ]
             )
 
+            # Send notification only after the order transaction commits.
+            transaction.on_commit(
+                lambda: create_order_notification(order)
+            )
+
         response_serializer = OrderSerializer(
             order,
             context={"request": request},
@@ -179,6 +185,11 @@ class OrderViewSet(viewsets.ModelViewSet):
                     ]
                 )
 
+            # Send notification only after the status transaction commits.
+            transaction.on_commit(
+                lambda: create_order_notification(order)
+            )
+
         return Response(
             OrderSerializer(
                 order,
@@ -220,7 +231,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 context={"request": request},
             ).data,
         )
+
     @staticmethod
     def _generate_order_number():
         return f"SMB-{uuid.uuid4().hex[:12].upper()}"
-
