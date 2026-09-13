@@ -1,0 +1,160 @@
+Binary file [35maccounts/__pycache__/models.cpython-314.pyc[m matches
+Binary file [35maccounts/__pycache__/serializers.cpython-314.pyc[m matches
+Binary file [35maccounts/__pycache__/urls.cpython-314.pyc[m matches
+Binary file [35maccounts/__pycache__/views.cpython-314.pyc[m matches
+[35maccounts/migrations/0002_otpverification.py[m[36m:[m[32m14[m[36m:[m            name='[1;31mOTP[mVerification',
+[35maccounts/migrations/0002_otpverification.py[m[36m:[m[32m18[m[36m:[m                ('[1;31motp[m_hash', models.CharField(max_length=128)),
+[35maccounts/migrations/0003_user_account_type.py[m[36m:[m[32m9[m[36m:[m        ('accounts', '0002_[1;31motp[mverification'),
+Binary file [35maccounts/migrations/__pycache__/0002_otpverification.cpython-314.pyc[m matches
+Binary file [35maccounts/migrations/__pycache__/0003_user_account_type.cpython-314.pyc[m matches
+[35maccounts/models.py[m[36m:[m[32m82[m[36m:[mclass [1;31mOTP[mVerification(models.Model):
+[35maccounts/models.py[m[36m:[m[32m94[m[36m:[m    [1;31motp[m_hash = models.CharField(
+[35maccounts/serializers.py[m[36m:[m[32m4[m[36m:[mfrom .models import [1;31mOTP[mVerification
+[35maccounts/serializers.py[m[36m:[m[32m138[m[36m:[m# SEND [1;31mOTP[m
+[35maccounts/serializers.py[m[36m:[m[32m141[m[36m:[mclass Send[1;31mOTP[mSerializer(serializers.Serializer):
+[35maccounts/serializers.py[m[36m:[m[32m145[m[36m:[m        choices=[1;31mOTP[mVerification.Purpose.choices,
+[35maccounts/serializers.py[m[36m:[m[32m146[m[36m:[m        default=[1;31mOTP[mVerification.Purpose.REGISTRATION,
+[35maccounts/serializers.py[m[36m:[m[32m160[m[36m:[m    [1;31motp[m = serializers.CharField(
+[35maccounts/serializers.py[m[36m:[m[32m181[m[36m:[m    def validate_[1;31motp[m(self, value):
+[35maccounts/serializers.py[m[36m:[m[32m184[m[36m:[m                "[1;31mOTP[m must contain only digits."
+[35maccounts/serializers.py[m[36m:[m[32m201[m[36m:[m# VERIFY [1;31mOTP[m
+[35maccounts/serializers.py[m[36m:[m[32m204[m[36m:[mclass Verify[1;31mOTP[mSerializer(serializers.Serializer):
+[35maccounts/serializers.py[m[36m:[m[32m207[m[36m:[m    [1;31motp[m = serializers.CharField(
+[35maccounts/serializers.py[m[36m:[m[32m214[m[36m:[m        choices=[1;31mOTP[mVerification.Purpose.choices,
+[35maccounts/serializers.py[m[36m:[m[32m215[m[36m:[m        default=[1;31mOTP[mVerification.Purpose.REGISTRATION,
+[35maccounts/serializers.py[m[36m:[m[32m221[m[36m:[m    def validate_[1;31motp[m(self, value):
+[35maccounts/serializers.py[m[36m:[m[32m224[m[36m:[m                "[1;31mOTP[m must contain only digits."
+[35maccounts/serializers.py[m[36m:[m[32m275[m[36m:[mclass Forg[1;31motP[masswordSerializer(serializers.Serializer):
+[35maccounts/serializers.py[m[36m:[m[32m293[m[36m:[m    [1;31motp[m = serializers.CharField(
+[35maccounts/serializers.py[m[36m:[m[32m314[m[36m:[m    def validate_[1;31motp[m(self, value):
+[35maccounts/serializers.py[m[36m:[m[32m317[m[36m:[m                "[1;31mOTP[m must contain only digits."
+Binary file [35maccounts/services/__pycache__/otp_service.cpython-314.pyc[m matches
+[35maccounts/services/otp_service.py[m[36m:[m[32m11[m[36m:[mfrom ..models import [1;31mOTP[mVerification
+[35maccounts/services/otp_service.py[m[36m:[m[32m16[m[36m:[m[1;31mOTP[m_LENGTH = 6
+[35maccounts/services/otp_service.py[m[36m:[m[32m17[m[36m:[m[1;31mOTP[m_EXPIRY_MINUTES = 5
+[35maccounts/services/otp_service.py[m[36m:[m[32m18[m[36m:[m[1;31mOTP[m_MAX_ATTEMPTS = 5
+[35maccounts/services/otp_service.py[m[36m:[m[32m19[m[36m:[m[1;31mOTP[m_RESEND_COOLDOWN_SECONDS = 60
+[35maccounts/services/otp_service.py[m[36m:[m[32m20[m[36m:[m[1;31mOTP[m_IP_LIMIT = 10
+[35maccounts/services/otp_service.py[m[36m:[m[32m21[m[36m:[m[1;31mOTP[m_IP_WINDOW_SECONDS = 3600
+[35maccounts/services/otp_service.py[m[36m:[m[32m24[m[36m:[mdef generate_[1;31motp[m():
+[35maccounts/services/otp_service.py[m[36m:[m[32m26[m[36m:[m    Generate a cryptographically secure 6-digit [1;31mOTP[m.
+[35maccounts/services/otp_service.py[m[36m:[m[32m31[m[36m:[mdef hash_[1;31motp[m([1;31motp[m: str) -> str:
+[35maccounts/services/otp_service.py[m[36m:[m[32m33[m[36m:[m    Hash [1;31mOTP[m before storing it in the database.
+[35maccounts/services/otp_service.py[m[36m:[m[32m36[m[36m:[m        [1;31motp[m.encode("utf-8")
+[35maccounts/services/otp_service.py[m[36m:[m[32m40[m[36m:[mdef send_[1;31motp[m(
+[35maccounts/services/otp_service.py[m[36m:[m[32m42[m[36m:[m    purpose: str = [1;31mOTP[mVerification.Purpose.REGISTRATION,
+[35maccounts/services/otp_service.py[m[36m:[m[32m46[m[36m:[m    Generate, store and email a new [1;31mOTP[m using Resend.
+[35maccounts/services/otp_service.py[m[36m:[m[32m52[m[36m:[m        ip_key = f"[1;31motp[m-ip:{ip_address}"
+[35maccounts/services/otp_service.py[m[36m:[m[32m55[m[36m:[m        if ip_requests >= [1;31mOTP[m_IP_LIMIT:
+[35maccounts/services/otp_service.py[m[36m:[m[32m57[m[36m:[m                "Too many [1;31mOTP[m requests. Please try again later."
+[35maccounts/services/otp_service.py[m[36m:[m[32m63[m[36m:[m            timeout=[1;31mOTP[m_IP_WINDOW_SECONDS,
+[35maccounts/services/otp_service.py[m[36m:[m[32m68[m[36m:[m    # Prevent frequent [1;31mOTP[m requests
+[35maccounts/services/otp_service.py[m[36m:[m[32m69[m[36m:[m    recent_[1;31motp[m = (
+[35maccounts/services/otp_service.py[m[36m:[m[32m70[m[36m:[m        [1;31mOTP[mVerification.objects
+[35maccounts/services/otp_service.py[m[36m:[m[32m75[m[36m:[m                seconds=[1;31mOTP[m_RESEND_COOLDOWN_SECONDS
+[35maccounts/services/otp_service.py[m[36m:[m[32m82[m[36m:[m    if recent_[1;31motp[m:
+[35maccounts/services/otp_service.py[m[36m:[m[32m84[m[36m:[m            "Please wait before requesting another [1;31mOTP[m."
+[35maccounts/services/otp_service.py[m[36m:[m[32m87[m[36m:[m    # Invalidate previous active [1;31mOTP[ms
+[35maccounts/services/otp_service.py[m[36m:[m[32m88[m[36m:[m    [1;31mOTP[mVerification.objects.filter(
+[35maccounts/services/otp_service.py[m[36m:[m[32m96[m[36m:[m    [1;31motp[m = generate_[1;31motp[m()
+[35maccounts/services/otp_service.py[m[36m:[m[32m98[m[36m:[m    [1;31motp[m_record = [1;31mOTP[mVerification.objects.create(
+[35maccounts/services/otp_service.py[m[36m:[m[32m100[m[36m:[m        [1;31motp[m_hash=hash_[1;31motp[m([1;31motp[m),
+[35maccounts/services/otp_service.py[m[36m:[m[32m103[m[36m:[m            minutes=[1;31mOTP[m_EXPIRY_MINUTES
+[35maccounts/services/otp_service.py[m[36m:[m[32m108[m[36m:[m        "[1;31mOTP[m requested for user account",
+[35maccounts/services/otp_service.py[m[36m:[m[32m129[m[36m:[m                        <h1>{[1;31motp[m}</h1>
+[35maccounts/services/otp_service.py[m[36m:[m[32m133[m[36m:[m                            {[1;31mOTP[m_EXPIRY_MINUTES} minutes.
+[35maccounts/services/otp_service.py[m[36m:[m[32m146[m[36m:[m        [1;31motp[m_record.is_used = True
+[35maccounts/services/otp_service.py[m[36m:[m[32m147[m[36m:[m        [1;31motp[m_record.save(
+[35maccounts/services/otp_service.py[m[36m:[m[32m152[m[36m:[m            "Resend email failed while sending [1;31mOTP[m",
+[35maccounts/services/otp_service.py[m[36m:[m[32m164[m[36m:[m    return [1;31motp[m_record
+[35maccounts/services/otp_service.py[m[36m:[m[32m167[m[36m:[mdef verify_[1;31motp[m(
+[35maccounts/services/otp_service.py[m[36m:[m[32m169[m[36m:[m    [1;31motp[m: str,
+[35maccounts/services/otp_service.py[m[36m:[m[32m173[m[36m:[m    Verify an [1;31mOTP[m securely.
+[35maccounts/services/otp_service.py[m[36m:[m[32m177[m[36m:[m    [1;31motp[m = [1;31motp[m.strip()
+[35maccounts/services/otp_service.py[m[36m:[m[32m179[m[36m:[m    [1;31motp[m_record = (
+[35maccounts/services/otp_service.py[m[36m:[m[32m180[m[36m:[m        [1;31mOTP[mVerification.objects
+[35maccounts/services/otp_service.py[m[36m:[m[32m190[m[36m:[m    if not [1;31motp[m_record:
+[35maccounts/services/otp_service.py[m[36m:[m[32m192[m[36m:[m            "Invalid or expired [1;31mOTP[m."
+[35maccounts/services/otp_service.py[m[36m:[m[32m195[m[36m:[m    if [1;31motp[m_record.is_expired():
+[35maccounts/services/otp_service.py[m[36m:[m[32m196[m[36m:[m        [1;31motp[m_record.is_used = True
+[35maccounts/services/otp_service.py[m[36m:[m[32m197[m[36m:[m        [1;31motp[m_record.save(
+[35maccounts/services/otp_service.py[m[36m:[m[32m202[m[36m:[m            "[1;31mOTP[m has expired."
+[35maccounts/services/otp_service.py[m[36m:[m[32m205[m[36m:[m    if [1;31motp[m_record.attempts >= [1;31mOTP[m_MAX_ATTEMPTS:
+[35maccounts/services/otp_service.py[m[36m:[m[32m206[m[36m:[m        [1;31motp[m_record.is_used = True
+[35maccounts/services/otp_service.py[m[36m:[m[32m207[m[36m:[m        [1;31motp[m_record.save(
+[35maccounts/services/otp_service.py[m[36m:[m[32m212[m[36m:[m            "Maximum [1;31mOTP[m attempts exceeded."
+[35maccounts/services/otp_service.py[m[36m:[m[32m215[m[36m:[m    [1;31motp[m_record.attempts += 1
+[35maccounts/services/otp_service.py[m[36m:[m[32m217[m[36m:[m    submitted_hash = hash_[1;31motp[m([1;31motp[m)
+[35maccounts/services/otp_service.py[m[36m:[m[32m220[m[36m:[m        [1;31motp[m_record.[1;31motp[m_hash,
+[35maccounts/services/otp_service.py[m[36m:[m[32m223[m[36m:[m        [1;31motp[m_record.save(
+[35maccounts/services/otp_service.py[m[36m:[m[32m228[m[36m:[m            "Invalid [1;31mOTP[m."
+[35maccounts/services/otp_service.py[m[36m:[m[32m231[m[36m:[m    [1;31motp[m_record.is_used = True
+[35maccounts/services/otp_service.py[m[36m:[m[32m233[m[36m:[m    [1;31motp[m_record.save(
+[35maccounts/tests.py[m[36m:[m[32m7[m[36m:[mfrom .models import [1;31mOTP[mVerification, User
+[35maccounts/tests.py[m[36m:[m[32m9[m[36m:[mfrom .services.[1;31motp[m_service import (
+[35maccounts/tests.py[m[36m:[m[32m10[m[36m:[m	[1;31mOTP[m_IP_LIMIT,
+[35maccounts/tests.py[m[36m:[m[32m11[m[36m:[m	send_[1;31motp[m,
+[35maccounts/tests.py[m[36m:[m[32m31[m[36m:[mclass [1;31mOTP[mThrottleTests(TestCase):
+[35maccounts/tests.py[m[36m:[m[32m38[m[36m:[m	@patch("accounts.services.[1;31motp[m_service.send_mail")
+[35maccounts/tests.py[m[36m:[m[32m39[m[36m:[m	def test_[1;31motp[m_requests_are_limited_per_ip(self, send_mail):
+[35maccounts/tests.py[m[36m:[m[32m40[m[36m:[m		for request_number in range([1;31mOTP[m_IP_LIMIT):
+[35maccounts/tests.py[m[36m:[m[32m41[m[36m:[m			send_[1;31motp[m(
+[35maccounts/tests.py[m[36m:[m[32m43[m[36m:[m				purpose=[1;31mOTP[mVerification.Purpose.REGISTRATION,
+[35maccounts/tests.py[m[36m:[m[32m49[m[36m:[m			"Too many [1;31mOTP[m requests",
+[35maccounts/tests.py[m[36m:[m[32m51[m[36m:[m			send_[1;31motp[m(
+[35maccounts/tests.py[m[36m:[m[32m53[m[36m:[m				purpose=[1;31mOTP[mVerification.Purpose.REGISTRATION,
+[35maccounts/tests.py[m[36m:[m[32m57[m[36m:[m		self.assertEqual(send_mail.call_count, [1;31mOTP[m_IP_LIMIT)
+[35maccounts/tests.py[m[36m:[m[32m59[m[36m:[m	@patch("accounts.services.[1;31motp[m_service.send_mail")
+[35maccounts/tests.py[m[36m:[m[32m60[m[36m:[m	def test_[1;31motp[m_send_failure_raises_clear_error(self, send_mail):
+[35maccounts/tests.py[m[36m:[m[32m64[m[36m:[m			send_[1;31motp[m(
+[35maccounts/tests.py[m[36m:[m[32m66[m[36m:[m				purpose=[1;31mOTP[mVerification.Purpose.PASSWORD_RESET,
+[35maccounts/urls.py[m[36m:[m[32m6[m[36m:[m    Send[1;31mOTP[mView,
+[35maccounts/urls.py[m[36m:[m[32m7[m[36m:[m    Verify[1;31mOTP[mView,
+[35maccounts/urls.py[m[36m:[m[32m17[m[36m:[m    Forg[1;31motP[masswordView,
+[35maccounts/urls.py[m[36m:[m[32m46[m[36m:[m        "send-[1;31motp[m/",
+[35maccounts/urls.py[m[36m:[m[32m47[m[36m:[m        Send[1;31mOTP[mView.as_view(),
+[35maccounts/urls.py[m[36m:[m[32m48[m[36m:[m        name="send-[1;31motp[m",
+[35maccounts/urls.py[m[36m:[m[32m52[m[36m:[m        "verify-[1;31motp[m/",
+[35maccounts/urls.py[m[36m:[m[32m53[m[36m:[m        Verify[1;31mOTP[mView.as_view(),
+[35maccounts/urls.py[m[36m:[m[32m54[m[36m:[m        name="verify-[1;31motp[m",
+[35maccounts/urls.py[m[36m:[m[32m78[m[36m:[m    Forg[1;31motP[masswordView.as_view(),
+[35maccounts/views.py[m[36m:[m[32m11[m[36m:[mfrom .models import [1;31mOTP[mVerification
+[35maccounts/views.py[m[36m:[m[32m17[m[36m:[m    Send[1;31mOTP[mSerializer,
+[35maccounts/views.py[m[36m:[m[32m18[m[36m:[m    Verify[1;31mOTP[mSerializer,
+[35maccounts/views.py[m[36m:[m[32m25[m[36m:[m    Forg[1;31motP[masswordSerializer,
+[35maccounts/views.py[m[36m:[m[32m28[m[36m:[mfrom .services.[1;31motp[m_service import (
+[35maccounts/views.py[m[36m:[m[32m29[m[36m:[m    send_[1;31motp[m,
+[35maccounts/views.py[m[36m:[m[32m30[m[36m:[m    verify_[1;31motp[m,
+[35maccounts/views.py[m[36m:[m[32m39[m[36m:[m    as verified. Email [1;31mOTP[m verification does that.
+[35maccounts/views.py[m[36m:[m[32m88[m[36m:[m        send_[1;31motp[m(
+[35maccounts/views.py[m[36m:[m[32m90[m[36m:[m            purpose=[1;31mOTP[mVerification.Purpose.EMAIL_VERIFY,
+[35maccounts/views.py[m[36m:[m[32m582[m[36m:[mclass Send[1;31mOTP[mView(APIView):
+[35maccounts/views.py[m[36m:[m[32m584[m[36m:[m    Send [1;31mOTP[m to an email address.
+[35maccounts/views.py[m[36m:[m[32m591[m[36m:[m        serializer = Send[1;31mOTP[mSerializer(
+[35maccounts/views.py[m[36m:[m[32m604[m[36m:[m            send_[1;31motp[m(
+[35maccounts/views.py[m[36m:[m[32m622[m[36m:[m                "message": "[1;31mOTP[m sent successfully.",
+[35maccounts/views.py[m[36m:[m[32m703[m[36m:[mclass Verify[1;31mOTP[mView(APIView):
+[35maccounts/views.py[m[36m:[m[32m705[m[36m:[m    Verify customer registration [1;31mOTP[m and issue JWT tokens.
+[35maccounts/views.py[m[36m:[m[32m712[m[36m:[m        serializer = Verify[1;31mOTP[mSerializer(
+[35maccounts/views.py[m[36m:[m[32m721[m[36m:[m        [1;31motp[m = serializer.validated_data["[1;31motp[m"]
+[35maccounts/views.py[m[36m:[m[32m725[m[36m:[m            verify_[1;31motp[m(
+[35maccounts/views.py[m[36m:[m[32m727[m[36m:[m                [1;31motp[m=[1;31motp[m,
+[35maccounts/views.py[m[36m:[m[32m740[m[36m:[m        # Registration [1;31mOTP[m
+[35maccounts/views.py[m[36m:[m[32m794[m[36m:[m                "message": "[1;31mOTP[m verified successfully.",
+[35maccounts/views.py[m[36m:[m[32m830[m[36m:[m        [1;31motp[m = serializer.validated_data["[1;31motp[m"]
+[35maccounts/views.py[m[36m:[m[32m857[m[36m:[m            verify_[1;31motp[m(
+[35maccounts/views.py[m[36m:[m[32m859[m[36m:[m                [1;31motp[m=[1;31motp[m,
+[35maccounts/views.py[m[36m:[m[32m860[m[36m:[m                purpose=[1;31mOTP[mVerification.Purpose.EMAIL_VERIFY,
+[35maccounts/views.py[m[36m:[m[32m901[m[36m:[mclass Forg[1;31motP[masswordView(APIView):
+[35maccounts/views.py[m[36m:[m[32m903[m[36m:[m    Send a password-reset [1;31mOTP[m to a customer or staff account.
+[35maccounts/views.py[m[36m:[m[32m910[m[36m:[m        serializer = Forg[1;31motP[masswordSerializer(
+[35maccounts/views.py[m[36m:[m[32m933[m[36m:[m                send_[1;31motp[m(
+[35maccounts/views.py[m[36m:[m[32m935[m[36m:[m                    purpose=[1;31mOTP[mVerification.Purpose.PASSWORD_RESET,
+[35maccounts/views.py[m[36m:[m[32m961[m[36m:[m                    "a password reset [1;31mOTP[m has been sent."
+[35maccounts/views.py[m[36m:[m[32m970[m[36m:[m    Reset customer or staff password using a verified [1;31mOTP[m.
+[35maccounts/views.py[m[36m:[m[32m989[m[36m:[m        [1;31motp[m = serializer.validated_data["[1;31motp[m"]
+[35maccounts/views.py[m[36m:[m[32m1010[m[36m:[m            verify_[1;31motp[m(
+[35maccounts/views.py[m[36m:[m[32m1012[m[36m:[m                [1;31motp[m=[1;31motp[m,
+[35maccounts/views.py[m[36m:[m[32m1013[m[36m:[m                purpose=[1;31mOTP[mVerification.Purpose.PASSWORD_RESET,
+[35mconfig/settings.py[m[36m:[m[32m216[m[36m:[m        "LOCATION": "smb-[1;31motp[m-throttle",
+Binary file [35mdb.sqlite3[m matches

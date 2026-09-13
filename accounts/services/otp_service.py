@@ -119,10 +119,10 @@ def send_otp(
             {
                 "from": settings.DEFAULT_FROM_EMAIL,
                 "to": [email],
-                "subject": "SMB Auto Parts - Verification Code",
+                "subject": "SMU Bike Spare Parts - Verification Code",
                 "html": f"""
                     <div>
-                        <h2>SMB Auto Parts</h2>
+                        <h2>SMU Bike Spare Parts</h2>
 
                         <p>Your verification code is:</p>
 
