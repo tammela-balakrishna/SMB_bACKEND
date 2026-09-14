@@ -29,7 +29,7 @@ urlpatterns = [
         include("addresses.urls"),
     ),
     path(
-        "api/notifications/",
+        "api/v1/notifications/",
         include("notifications.urls"),
     ),
 ]
