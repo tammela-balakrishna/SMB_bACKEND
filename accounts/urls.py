@@ -14,6 +14,8 @@ from .views import (
     StaffLoginView,
     StaffActivateView,
     StaffDetailView,
+    StaffDetailView,
+    StaffReactivateView,
     ForgotPasswordView,
     ResetPasswordView,
 )
@@ -122,6 +124,11 @@ urlpatterns = [
         StaffDetailView.as_view(),
         name="staff-detail",
     ),
+    path(
+    "staff/<int:pk>/activate/",
+    StaffReactivateView.as_view(),
+    name="staff-reactivate",
+),
 ]
 
 

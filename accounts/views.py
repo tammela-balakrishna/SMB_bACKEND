@@ -23,7 +23,8 @@ from .serializers import (
     StaffActivateSerializer,
     StaffManagementSerializer,
     ForgotPasswordSerializer,
-    ResetPasswordSerializer,    
+    ResetPasswordSerializer, 
+       
 )
 from .services.otp_service import (
     send_otp,
@@ -443,6 +444,8 @@ class StaffCreateView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
 class StaffDetailView(APIView):
     """
     Manage an individual staff account.
@@ -508,8 +511,6 @@ class StaffDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Prevent Super Admin from modifying themselves
-        # through this staff-management endpoint.
         if user.id == request.user.id:
             return Response(
                 {
@@ -555,7 +556,6 @@ class StaffDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Prevent Super Admin from deactivating themselves.
         if user.id == request.user.id:
             return Response(
                 {
@@ -576,6 +576,81 @@ class StaffDetailView(APIView):
             {
                 "success": True,
                 "message": "Staff account deactivated successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+class StaffReactivateView(APIView):
+    """
+    Reactivate a previously deactivated staff account.
+
+    POST:
+        Reactivate staff account.
+
+    Access:
+        Super Admin only.
+    """
+
+    permission_classes = [
+        IsAuthenticated,
+        IsSuperAdmin,
+    ]
+
+    def post(self, request, pk):
+        try:
+            user = User.objects.get(
+                pk=pk,
+                account_type=User.AccountType.STAFF,
+            )
+        except User.DoesNotExist:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Staff account not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Prevent Super Admin from modifying themselves.
+        if user.id == request.user.id:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "You cannot reactivate your own account "
+                        "through staff management."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if user.is_active:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Staff account is already active.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.is_active = True
+        user.save(
+            update_fields=["is_active"]
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Staff account reactivated successfully.",
+                "staff": {
+                    "id": user.id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "role": user.role,
+                    "account_type": user.account_type,
+                    "is_active": user.is_active,
+                    "is_verified": user.is_verified,
+                },
             },
             status=status.HTTP_200_OK,
         )
