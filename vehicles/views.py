@@ -38,6 +38,11 @@ class VehicleBrandViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleBrandSerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
 
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+    ]
+
     def get_queryset(self):
         queryset = super().get_queryset()
 
@@ -61,6 +66,11 @@ class VehicleModelViewSet(viewsets.ModelViewSet):
     ).all()
     serializer_class = VehicleModelSerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
+
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+    ]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -97,6 +107,11 @@ class VehicleVariantViewSet(viewsets.ModelViewSet):
     ).all()
     serializer_class = VehicleVariantSerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
+
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+    ]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -168,6 +183,11 @@ class ProductCategoryViewSet(viewsets.ModelViewSet):
     serializer_class = ProductCategorySerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
 
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+    ]
+
     def get_queryset(self):
         queryset = super().get_queryset()
 
@@ -190,6 +210,11 @@ class ProductBrandViewSet(viewsets.ModelViewSet):
     serializer_class = ProductBrandSerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
 
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+    ]
+
     def get_queryset(self):
         queryset = super().get_queryset()
 
@@ -209,8 +234,8 @@ class ProductBrandViewSet(viewsets.ModelViewSet):
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.select_related(
-        "product_category",
-        "product_brand",
+        "category",
+        "brand",
     ).all()
     serializer_class = ProductSerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
@@ -219,11 +244,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
 
         category_id = self.request.query_params.get(
-            "product_category"
+            "category"
         )
 
         brand_id = self.request.query_params.get(
-            "product_brand"
+            "brand"
         )
 
         is_active = self.request.query_params.get(
@@ -236,12 +261,12 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         if category_id:
             queryset = queryset.filter(
-                product_category_id=category_id
+                category_id=category_id
             )
 
         if brand_id:
             queryset = queryset.filter(
-                product_brand_id=brand_id
+                brand_id=brand_id
             )
 
         if is_active is not None:
@@ -268,7 +293,6 @@ class ProductImageViewSet(viewsets.ModelViewSet):
     serializer_class = ProductImageSerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
 
-    # Allow Flutter/admin clients to upload actual image files.
     parser_classes = [
         MultiPartParser,
         FormParser,
@@ -314,102 +338,49 @@ class ProductCompatibilityViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        product_id = self.request.query_params.get("product")
-        brand_id = self.request.query_params.get("vehicle_brand")
-        model_id = self.request.query_params.get("vehicle_model")
-        variant_id = self.request.query_params.get("vehicle_variant")
-        year_id = self.request.query_params.get("vehicle_year")
+        product_id = self.request.query_params.get(
+            "product"
+        )
+
+        vehicle_brand_id = self.request.query_params.get(
+            "vehicle_brand"
+        )
+
+        vehicle_model_id = self.request.query_params.get(
+            "vehicle_model"
+        )
+
+        vehicle_variant_id = self.request.query_params.get(
+            "vehicle_variant"
+        )
+
+        vehicle_year_id = self.request.query_params.get(
+            "vehicle_year"
+        )
 
         if product_id:
-            queryset = queryset.filter(product_id=product_id)
-
-
-        # Hierarchical vehicle matching.
-        #
-        # Brand selection:
-        #   Brand-level mappings only.
-        #
-        # Model selection:
-        #   Brand-level + Model-level mappings.
-        #
-        # Variant selection:
-        #   Brand-level + Model-level + Variant-level mappings.
-        #
-        # Year selection:
-        #   Brand-level + Model-level + Variant-level + Year-level mappings.
-
-        if year_id:
             queryset = queryset.filter(
-                Q(
-                    vehicle_year_id=year_id,
-                    vehicle_brand_id=brand_id,
-                    vehicle_model_id=model_id,
-                    vehicle_variant_id=variant_id,
-                )
-                | Q(
-                    vehicle_year__isnull=True,
-                    vehicle_variant_id=variant_id,
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                )
-                | Q(
-                    vehicle_year__isnull=True,
-                    vehicle_variant__isnull=True,
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                )
-                | Q(
-                    vehicle_year__isnull=True,
-                    vehicle_variant__isnull=True,
-                    vehicle_model__isnull=True,
-                    vehicle_brand_id=brand_id,
-                )
+                product_id=product_id
             )
 
-        elif variant_id:
+        if vehicle_brand_id:
             queryset = queryset.filter(
-                Q(
-                    vehicle_variant_id=variant_id,
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                    vehicle_year__isnull=True,
-                )
-                | Q(
-                    vehicle_variant__isnull=True,
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                    vehicle_year__isnull=True,
-                )
-                | Q(
-                    vehicle_variant__isnull=True,
-                    vehicle_model__isnull=True,
-                    vehicle_brand_id=brand_id,
-                    vehicle_year__isnull=True,
-                )
+                vehicle_brand_id=vehicle_brand_id
             )
 
-        elif model_id:
+        if vehicle_model_id:
             queryset = queryset.filter(
-                Q(
-                    vehicle_model_id=model_id,
-                    vehicle_brand_id=brand_id,
-                    vehicle_variant__isnull=True,
-                    vehicle_year__isnull=True,
-                )
-                | Q(
-                    vehicle_model__isnull=True,
-                    vehicle_variant__isnull=True,
-                    vehicle_year__isnull=True,
-                    vehicle_brand_id=brand_id,
-                )
+                vehicle_model_id=vehicle_model_id
             )
 
-        elif brand_id:
+        if vehicle_variant_id:
             queryset = queryset.filter(
-                vehicle_brand_id=brand_id,
-                vehicle_model__isnull=True,
-                vehicle_variant__isnull=True,
-                vehicle_year__isnull=True,
+                vehicle_variant_id=vehicle_variant_id
+            )
+
+        if vehicle_year_id:
+            queryset = queryset.filter(
+                vehicle_year_id=vehicle_year_id
             )
 
         return queryset
