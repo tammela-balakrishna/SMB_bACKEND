@@ -3,7 +3,7 @@ import logging
 import secrets
 from datetime import timedelta
 
-import resend
+from mailjet_rest import Client
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
@@ -111,36 +111,57 @@ def send_otp(
             "purpose": purpose,
         },
     )
-
     try:
-        resend.api_key = settings.RESEND_API_KEY
-
-        resend.Emails.send(
-            {
-                "from": settings.DEFAULT_FROM_EMAIL,
-                "to": [email],
-                "subject": "SMU Bike Spare Parts - Verification Code",
-                "html": f"""
-                    <div>
-                        <h2>SMU Bike Spare Parts</h2>
-
-                        <p>Your verification code is:</p>
-
-                        <h1>{otp}</h1>
-
-                        <p>
-                            This code will expire in
-                            {OTP_EXPIRY_MINUTES} minutes.
-                        </p>
-
-                        <p>
-                            If you did not request this code,
-                            please ignore this email.
-                        </p>
-                    </div>
-                """,
-            }
+        mailjet = Client(
+            auth=(
+                settings.MAILJET_API_KEY,
+                settings.MAILJET_SECRET_KEY,
+            ),
+            version="v3.1",
         )
+
+        data = {
+            "Messages": [
+                {
+                    "From": {
+                        "Email": settings.DEFAULT_FROM_EMAIL,
+                        "Name": settings.DEFAULT_FROM_NAME,
+                    },
+                    "To": [
+                        {
+                            "Email": email,
+                        }
+                    ],
+                    "Subject": "SMU Bike Spare Parts - Verification Code",
+                    "HTMLPart": f"""
+                        <div>
+                            <h2>SMU Bike Spare Parts</h2>
+
+                            <p>Your verification code is:</p>
+
+                            <h1>{otp}</h1>
+
+                            <p>
+                                This code will expire in
+                                {OTP_EXPIRY_MINUTES} minutes.
+                            </p>
+
+                            <p>
+                                If you did not request this code,
+                                please ignore this email.
+                            </p>
+                        </div>
+                    """,
+                }
+            ]
+        }
+
+        result = mailjet.send.create(data=data)
+
+        if result.status_code != 200:
+            raise RuntimeError(
+                f"Mailjet returned status {result.status_code}"
+            )
 
     except Exception:
         otp_record.is_used = True
@@ -149,7 +170,7 @@ def send_otp(
         )
 
         logger.exception(
-            "Resend email failed while sending OTP",
+            "Mailjet email failed while sending OTP",
             extra={
                 "email": email,
                 "purpose": purpose,
@@ -160,7 +181,6 @@ def send_otp(
             "Unable to send verification email. "
             "Please try again later."
         )
-
     return otp_record
 
 
