@@ -364,3 +364,4 @@ class ProductCompatibilityViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+
