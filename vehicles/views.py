@@ -1,4 +1,4 @@
-from django.db.models import Q
+﻿from django.db.models import Q
 from rest_framework import viewsets
 from rest_framework.parsers import MultiPartParser, FormParser
 
@@ -234,8 +234,8 @@ class ProductBrandViewSet(viewsets.ModelViewSet):
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.select_related(
-        "category",
-        "brand",
+        "product_category",
+        "product_brand",
     ).all()
     serializer_class = ProductSerializer
     permission_classes = [IsInventoryManagerOrReadOnly]
@@ -243,31 +243,16 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        category_id = self.request.query_params.get(
-            "category"
-        )
-
-        brand_id = self.request.query_params.get(
-            "brand"
-        )
-
-        is_active = self.request.query_params.get(
-            "is_active"
-        )
-
-        is_featured = self.request.query_params.get(
-            "is_featured"
-        )
+        category_id = self.request.query_params.get("product_category")
+        brand_id = self.request.query_params.get("product_brand")
+        is_active = self.request.query_params.get("is_active")
+        is_featured = self.request.query_params.get("is_featured")
 
         if category_id:
-            queryset = queryset.filter(
-                category_id=category_id
-            )
+            queryset = queryset.filter(product_category_id=category_id)
 
         if brand_id:
-            queryset = queryset.filter(
-                brand_id=brand_id
-            )
+            queryset = queryset.filter(product_brand_id=brand_id)
 
         if is_active is not None:
             queryset = queryset.filter(
@@ -279,13 +264,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 is_featured=is_featured.lower() == "true"
             )
 
-        return queryset.order_by("name")
-
-
-# ============================================================
-# PRODUCT IMAGE
-# ============================================================
-
+        return queryset
 class ProductImageViewSet(viewsets.ModelViewSet):
     queryset = ProductImage.objects.select_related(
         "product",
@@ -384,3 +363,4 @@ class ProductCompatibilityViewSet(viewsets.ModelViewSet):
             )
 
         return queryset
+
