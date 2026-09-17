@@ -1,7 +1,12 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from common.models import TimeStampedModel
 
+
+# ============================================================
+# VEHICLE BRAND
+# ============================================================
 
 class VehicleBrand(TimeStampedModel):
     name = models.CharField(
@@ -26,6 +31,10 @@ class VehicleBrand(TimeStampedModel):
     def __str__(self):
         return self.name
 
+
+# ============================================================
+# VEHICLE MODEL
+# ============================================================
 
 class VehicleModel(TimeStampedModel):
     vehicle_brand = models.ForeignKey(
@@ -59,10 +68,16 @@ class VehicleModel(TimeStampedModel):
             ),
         ]
 
-
     def __str__(self):
         return f"{self.vehicle_brand.name} {self.name}"
+
+
+# ============================================================
+# VEHICLE VARIANT
+# ============================================================
+
 class VehicleVariant(TimeStampedModel):
+
     class FuelType(models.TextChoices):
         PETROL = "PETROL", "Petrol"
         ELECTRIC = "ELECTRIC", "Electric"
@@ -122,6 +137,12 @@ class VehicleVariant(TimeStampedModel):
 
     def __str__(self):
         return f"{self.vehicle_model} - {self.name}"
+
+
+# ============================================================
+# VEHICLE YEAR
+# ============================================================
+
 class VehicleYear(TimeStampedModel):
     vehicle_variant = models.ForeignKey(
         VehicleVariant,
@@ -148,6 +169,12 @@ class VehicleYear(TimeStampedModel):
 
     def __str__(self):
         return f"{self.vehicle_variant} - {self.year}"
+
+
+# ============================================================
+# PRODUCT CATEGORY
+# ============================================================
+
 class ProductCategory(TimeStampedModel):
     name = models.CharField(
         max_length=100,
@@ -175,6 +202,12 @@ class ProductCategory(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+
+# ============================================================
+# PRODUCT BRAND
+# ============================================================
+
 class ProductBrand(TimeStampedModel):
     name = models.CharField(
         max_length=100,
@@ -202,6 +235,12 @@ class ProductBrand(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+
+# ============================================================
+# PRODUCT
+# ============================================================
+
 class Product(TimeStampedModel):
     product_category = models.ForeignKey(
         ProductCategory,
@@ -248,6 +287,12 @@ class Product(TimeStampedModel):
 
     def __str__(self):
         return f"{self.name} ({self.sku})"
+
+
+# ============================================================
+# PRODUCT IMAGE
+# ============================================================
+
 class ProductImage(TimeStampedModel):
     product = models.ForeignKey(
         Product,
@@ -279,6 +324,12 @@ class ProductImage(TimeStampedModel):
 
     def __str__(self):
         return f"{self.product.name} - Image {self.id}"
+
+
+# ============================================================
+# PRODUCT COMPATIBILITY
+# ============================================================
+
 class ProductCompatibility(TimeStampedModel):
     product = models.ForeignKey(
         Product,
@@ -383,7 +434,9 @@ class ProductCompatibility(TimeStampedModel):
             year = self.vehicle_year
 
             expected_variant_id = year.vehicle_variant_id
-            expected_model_id = year.vehicle_variant.vehicle_model_id
+            expected_model_id = (
+                year.vehicle_variant.vehicle_model_id
+            )
             expected_brand_id = (
                 year.vehicle_variant.vehicle_model.vehicle_brand_id
             )
@@ -452,6 +505,7 @@ class ProductCompatibility(TimeStampedModel):
     def save(self, *args, **kwargs):
         if self.vehicle_year_id:
             year = self.vehicle_year
+
             self.vehicle_variant_id = year.vehicle_variant_id
             self.vehicle_model_id = (
                 year.vehicle_variant.vehicle_model_id
@@ -462,6 +516,7 @@ class ProductCompatibility(TimeStampedModel):
 
         elif self.vehicle_variant_id:
             variant = self.vehicle_variant
+
             self.vehicle_model_id = variant.vehicle_model_id
             self.vehicle_brand_id = (
                 variant.vehicle_model.vehicle_brand_id
@@ -494,6 +549,10 @@ class ProductCompatibility(TimeStampedModel):
 
         return f"{self.product} ? {compatibility}"
 
+
+# ============================================================
+# CATEGORY DISCOUNT
+# ============================================================
 
 class CategoryDiscount(TimeStampedModel):
 
@@ -558,11 +617,15 @@ class CategoryDiscount(TimeStampedModel):
 
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(discount_value__gt=0),
+                condition=models.Q(
+                    discount_value__gt=0
+                ),
                 name="discount_value_positive",
             ),
             models.CheckConstraint(
-                condition=models.Q(min_order_amount__gte=0),
+                condition=models.Q(
+                    min_order_amount__gte=0
+                ),
                 name="min_order_amount_non_negative",
             ),
             models.CheckConstraint(
@@ -573,7 +636,9 @@ class CategoryDiscount(TimeStampedModel):
                 name="max_discount_non_negative",
             ),
             models.CheckConstraint(
-                condition=models.Q(start_at__lt=models.F("end_at")),
+                condition=models.Q(
+                    start_at__lt=models.F("end_at")
+                ),
                 name="discount_start_before_end",
             ),
         ]
@@ -581,38 +646,77 @@ class CategoryDiscount(TimeStampedModel):
     def clean(self):
         super().clean()
 
+        errors = {}
+
+        # --------------------------------------------------------
+        # Discount value
+        # --------------------------------------------------------
+
         if self.discount_value is not None:
             if self.discount_value <= 0:
-                raise ValidationError({
-                    "discount_value": "Discount value must be greater than 0."
-                })
+                errors["discount_value"] = (
+                    "Discount value must be greater than 0."
+                )
+
+        # --------------------------------------------------------
+        # Percentage validation
+        # --------------------------------------------------------
 
         if (
             self.discount_type == self.DiscountType.PERCENTAGE
+            and self.discount_value is not None
             and self.discount_value > 100
         ):
-            raise ValidationError({
-                "discount_value": "Percentage discount cannot exceed 100%."
-            })
+            errors["discount_value"] = (
+                "Percentage discount cannot exceed 100%."
+            )
+
+        # --------------------------------------------------------
+        # Maximum discount validation
+        # --------------------------------------------------------
 
         if (
             self.max_discount_amount is not None
             and self.max_discount_amount < 0
         ):
-            raise ValidationError({
-                "max_discount_amount": "Maximum discount amount cannot be negative."
-            })
+            errors["max_discount_amount"] = (
+                "Maximum discount amount cannot be negative."
+            )
 
-        if self.min_order_amount < 0:
-            raise ValidationError({
-                "min_order_amount": "Minimum order amount cannot be negative."
-            })
+        # Maximum discount only applies to percentage discounts.
+        if (
+            self.discount_type == self.DiscountType.FIXED_AMOUNT
+            and self.max_discount_amount is not None
+        ):
+            errors["max_discount_amount"] = (
+                "Maximum discount amount should only be used "
+                "with percentage discounts."
+            )
+
+        # --------------------------------------------------------
+        # Minimum order amount
+        # --------------------------------------------------------
+
+        if (
+            self.min_order_amount is not None
+            and self.min_order_amount < 0
+        ):
+            errors["min_order_amount"] = (
+                "Minimum order amount cannot be negative."
+            )
+
+        # --------------------------------------------------------
+        # Date validation
+        # --------------------------------------------------------
 
         if self.start_at and self.end_at:
             if self.start_at >= self.end_at:
-                raise ValidationError({
-                    "end_at": "End date/time must be after start date/time."
-                })
+                errors["end_at"] = (
+                    "End date/time must be after start date/time."
+                )
+
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self):
         return (
@@ -620,6 +724,12 @@ class CategoryDiscount(TimeStampedModel):
             f"{self.discount_value} "
             f"{self.discount_type}"
         )
+
+
+# ============================================================
+# CATEGORY DISCOUNT PRODUCT MAPPING
+# ============================================================
+
 class CategoryDiscountProduct(TimeStampedModel):
     category_discount = models.ForeignKey(
         CategoryDiscount,
@@ -639,70 +749,42 @@ class CategoryDiscountProduct(TimeStampedModel):
 
         constraints = [
             models.UniqueConstraint(
-                fields=["category_discount", "product"],
+                fields=[
+                    "category_discount",
+                    "product",
+                ],
                 name="unique_category_discount_product",
             ),
         ]
 
-def clean(self):
-    super().clean()
+    def clean(self):
+        super().clean()
 
-    errors = {}
+        errors = {}
 
-    # Discount value
-    if self.discount_value is not None:
-        if self.discount_value <= 0:
-            errors["discount_value"] = (
-                "Discount value must be greater than 0."
-            )
+        # --------------------------------------------------------
+        # Ensure mapped product belongs to discount category
+        # --------------------------------------------------------
 
-    # Percentage validation
-    if (
-        self.discount_type == self.DiscountType.PERCENTAGE
-        and self.discount_value is not None
-        and self.discount_value > 100
-    ):
-        errors["discount_value"] = (
-            "Percentage discount cannot exceed 100%."
-        )
+        if (
+            self.category_discount_id
+            and self.product_id
+        ):
+            if (
+                self.category_discount.product_category_id
+                != self.product.product_category_id
+            ):
+                errors["product"] = (
+                    "Selected product must belong to the "
+                    "same category as the discount."
+                )
 
-    # Maximum discount
-    if (
-        self.max_discount_amount is not None
-        and self.max_discount_amount < 0
-    ):
-        errors["max_discount_amount"] = (
-            "Maximum discount amount cannot be negative."
-        )
+        if errors:
+            raise ValidationError(errors)
 
-    # Minimum order amount
-    if (
-        self.min_order_amount is not None
-        and self.min_order_amount < 0
-    ):
-        errors["min_order_amount"] = (
-            "Minimum order amount cannot be negative."
-        )
-
-    # Date validation
-    if self.start_at and self.end_at:
-        if self.start_at >= self.end_at:
-            errors["end_at"] = (
-                "End date/time must be after start date/time."
-            )
-
-    # Maximum discount is mainly meaningful for percentage discounts.
-    if (
-        self.discount_type == self.DiscountType.FIXED_AMOUNT
-        and self.max_discount_amount is not None
-    ):
-        errors["max_discount_amount"] = (
-            "Maximum discount amount should only be used "
-            "with percentage discounts."
-        )
-
-    if errors:
-        raise ValidationError(errors)
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return (

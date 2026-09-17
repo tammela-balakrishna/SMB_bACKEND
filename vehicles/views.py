@@ -369,9 +369,15 @@ class ProductCompatibilityViewSet(viewsets.ModelViewSet):
 # CATEGORY DISCOUNT
 # ============================================================
 
+# ============================================================
+# CATEGORY DISCOUNT
+# ============================================================
+
 class CategoryDiscountViewSet(viewsets.ModelViewSet):
     queryset = CategoryDiscount.objects.select_related(
         "product_category",
+    ).prefetch_related(
+        "product_mappings__product",
     ).all()
 
     serializer_class = CategoryDiscountSerializer
@@ -388,6 +394,10 @@ class CategoryDiscountViewSet(viewsets.ModelViewSet):
             "is_active"
         )
 
+        application_scope = self.request.query_params.get(
+            "application_scope"
+        )
+
         if category_id:
             queryset = queryset.filter(
                 product_category_id=category_id
@@ -398,8 +408,12 @@ class CategoryDiscountViewSet(viewsets.ModelViewSet):
                 is_active=is_active.lower() == "true"
             )
 
+        if application_scope:
+            queryset = queryset.filter(
+                application_scope=application_scope
+            )
+
         return queryset.order_by(
             "priority",
             "-created_at",
         )
-
