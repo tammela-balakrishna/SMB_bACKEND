@@ -6,6 +6,7 @@ from .models import (
     Product,
     ProductImage,
     ProductCompatibility,
+    CategoryDiscount,
     VehicleBrand,
     VehicleModel,
     VehicleVariant,
@@ -126,6 +127,34 @@ class ProductCompatibilitySerializer(serializers.ModelSerializer):
             "vehicle_variant",
             "vehicle_year",
             "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+        ]
+
+# ============================================================
+# CATEGORY DISCOUNT
+# ============================================================
+
+class CategoryDiscountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CategoryDiscount
+        fields = [
+            "id",
+            "product_category",
+            "application_scope",
+            "discount_type",
+            "discount_value",
+            "max_discount_amount",
+            "min_order_amount",
+            "start_at",
+            "end_at",
+            "priority",
+            "is_active",
             "created_at",
             "updated_at",
         ]

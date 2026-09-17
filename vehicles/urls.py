@@ -10,6 +10,7 @@ from .views import (
     ProductBrandViewSet,
     ProductViewSet,
     ProductImageViewSet,
+    CategoryDiscountViewSet,
 )
 
 
@@ -69,6 +70,11 @@ router.register(
     r"compatibilities",
     ProductCompatibilityViewSet,
     basename="product-compatibility",
+)
+router.register(
+    r"category-discounts",
+    CategoryDiscountViewSet,
+    basename="category-discount",
 )
 
 

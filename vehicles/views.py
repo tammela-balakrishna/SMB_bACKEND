@@ -14,6 +14,7 @@ from .models import (
     Product,
     ProductImage,
     ProductCompatibility,
+    CategoryDiscount,
 )
 
 from .serializers import (
@@ -26,6 +27,7 @@ from .serializers import (
     ProductSerializer,
     ProductImageSerializer,
     ProductCompatibilitySerializer,
+    CategoryDiscountSerializer,
 )
 
 
@@ -363,5 +365,41 @@ class ProductCompatibilityViewSet(viewsets.ModelViewSet):
             )
 
         return queryset
+# ============================================================
+# CATEGORY DISCOUNT
+# ============================================================
 
+class CategoryDiscountViewSet(viewsets.ModelViewSet):
+    queryset = CategoryDiscount.objects.select_related(
+        "product_category",
+    ).all()
+
+    serializer_class = CategoryDiscountSerializer
+    permission_classes = [IsInventoryManagerOrReadOnly]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        category_id = self.request.query_params.get(
+            "product_category"
+        )
+
+        is_active = self.request.query_params.get(
+            "is_active"
+        )
+
+        if category_id:
+            queryset = queryset.filter(
+                product_category_id=category_id
+            )
+
+        if is_active is not None:
+            queryset = queryset.filter(
+                is_active=is_active.lower() == "true"
+            )
+
+        return queryset.order_by(
+            "priority",
+            "-created_at",
+        )
 
