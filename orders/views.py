@@ -11,7 +11,7 @@ from rest_framework.response import Response
 
 from accounts.permissions import IsOrderManager
 from notifications.services import create_order_notification
-from vehicles.models import Product
+from products.models import Product
 
 from .models import Order, OrderItem
 from .serializers import (
