@@ -234,4 +234,4 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @staticmethod
     def _generate_order_number():
-        return f"SMB-{uuid.uuid4().hex[:12].upper()}"
+        return f"SMU-{uuid.uuid4().hex[:12].upper()}"
