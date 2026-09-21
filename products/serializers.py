@@ -269,29 +269,6 @@ class ProductBrandSerializer(serializers.ModelSerializer):
 # PRODUCT
 # ============================================================
 
-class ProductSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Product
-        fields = [
-            "id",
-            "product_category",
-            "product_brand",
-            "name",
-            "sku",
-            "description",
-            "mrp",
-            "is_active",
-            "is_featured",
-            "created_at",
-            "updated_at",
-        ]
-        read_only_fields = [
-            "id",
-            "created_at",
-            "updated_at",
-        ]
-
-
 # ============================================================
 # PRODUCT IMAGE
 # ============================================================
