@@ -74,6 +74,7 @@ class ProductBrandViewSet(viewsets.ModelViewSet):
     parser_classes = [
         MultiPartParser,
         FormParser,
+        JSONParser,
     ]
 
     def get_queryset(self):
@@ -87,7 +88,6 @@ class ProductBrandViewSet(viewsets.ModelViewSet):
             )
 
         return queryset.order_by("name")
-
 
 # ============================================================
 # PRODUCT
