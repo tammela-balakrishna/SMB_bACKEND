@@ -1,4 +1,4 @@
-from rest_framework import status, viewsets
+﻿from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -109,3 +109,34 @@ class DeviceTokenViewSet(viewsets.ModelViewSet):
                 else status.HTTP_200_OK
             ),
         )
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="deactivate",
+    )
+    def deactivate(self, request, *args, **kwargs):
+        token = request.data.get("token")
+
+        if not token:
+            return Response(
+                {"detail": "FCM token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        updated_count = DeviceToken.objects.filter(
+            user=request.user,
+            token=token,
+            is_active=True,
+        ).update(
+            is_active=False,
+        )
+
+        return Response(
+            {
+                "detail": "Device token deactivated.",
+                "updated_count": updated_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
