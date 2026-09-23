@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import viewsets
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from accounts.permissions import IsInventoryManagerOrReadOnly
@@ -198,29 +199,59 @@ class ProductCompatibilityViewSet(viewsets.ModelViewSet):
             "vehicle_year"
         )
 
+        # --------------------------------------------------------
+        # PRODUCT FILTER
+        # --------------------------------------------------------
+
         if product_id:
             queryset = queryset.filter(
                 product_id=product_id
             )
 
+        # --------------------------------------------------------
+        # HIERARCHICAL VEHICLE COMPATIBILITY FILTER
+        #
+        # Selected:
+        # Brand -> Model -> Variant -> Year
+        #
+        # Matches:
+        # 1. Brand only
+        # 2. Brand + Model
+        # 3. Brand + Model + Variant
+        # 4. Exact Year compatibility
+        # --------------------------------------------------------
+
         if vehicle_brand_id:
-            queryset = queryset.filter(
-                vehicle_brand_id=vehicle_brand_id
+            compatibility_filter = Q(
+                vehicle_brand_id=vehicle_brand_id,
+                vehicle_model__isnull=True,
+                vehicle_variant__isnull=True,
+                vehicle_year__isnull=True,
             )
 
-        if vehicle_model_id:
-            queryset = queryset.filter(
-                vehicle_model_id=vehicle_model_id
-            )
+            if vehicle_model_id:
+                compatibility_filter |= Q(
+                    vehicle_brand_id=vehicle_brand_id,
+                    vehicle_model_id=vehicle_model_id,
+                    vehicle_variant__isnull=True,
+                    vehicle_year__isnull=True,
+                )
 
-        if vehicle_variant_id:
-            queryset = queryset.filter(
-                vehicle_variant_id=vehicle_variant_id
-            )
+            if vehicle_model_id and vehicle_variant_id:
+                compatibility_filter |= Q(
+                    vehicle_brand_id=vehicle_brand_id,
+                    vehicle_model_id=vehicle_model_id,
+                    vehicle_variant_id=vehicle_variant_id,
+                    vehicle_year__isnull=True,
+                )
 
-        if vehicle_year_id:
+            if vehicle_year_id:
+                compatibility_filter |= Q(
+                    vehicle_year_id=vehicle_year_id
+                )
+
             queryset = queryset.filter(
-                vehicle_year_id=vehicle_year_id
+                compatibility_filter
             )
 
         return queryset
