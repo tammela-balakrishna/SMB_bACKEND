@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from decimal import Decimal
 
 from django.db import transaction
@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from accounts.permissions import IsOrderManager
 from notifications.services import create_order_notification
 from products.models import Product
+from products.serializers import ProductSerializer
 
 from .models import Order, OrderItem
 from .serializers import (
@@ -91,7 +92,8 @@ class OrderViewSet(viewsets.ModelViewSet):
                 product = products_by_id[item_data["product"]]
                 quantity = item_data["quantity"]
 
-                unit_price = product.mrp
+                discount_data = ProductSerializer()._get_discount_data(product)
+                unit_price = Decimal(str(discount_data["selling_price"]))
                 total_price = unit_price * quantity
                 subtotal += total_price
 
